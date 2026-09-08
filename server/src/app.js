@@ -7,6 +7,10 @@ import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 
@@ -18,6 +22,10 @@ app.use(auth);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/providers', providerRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', publicRoutes);
 
 app.get('/health', (req, res) => res.json({ success: true, message: 'ok', data: { status: 'up' } }));

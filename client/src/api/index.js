@@ -19,7 +19,28 @@ export const requestApi = {
   confirm: (id, providerId) => api.post(`/requests/${id}/confirm`, { providerId }),
   updateStatus: (id, status) => api.patch(`/requests/${id}/status`, { status }),
   cancel: (id) => api.post(`/requests/${id}/cancel`),
-  feedback: (id, rating, comment) => api.post(`/requests/${id}/feedback`, { rating, comment })
+  reschedule: (id) => api.post(`/requests/${id}/reschedule`),
+  feedback: (id, rating, comment) => api.post(`/requests/${id}/feedback`, { rating, comment }),
+  invoice: (id) => api.get(`/requests/${id}/invoice`)
+};
+
+export const profileApi = {
+  updateProfile: (payload) => api.put('/profile/me', payload),
+  updateProviderSettings: (payload) => api.put('/profile/provider/settings', payload)
+};
+
+export const notificationApi = {
+  list: () => api.get('/notifications')
+};
+
+export const adminApi = {
+  stats: () => api.get('/admin/stats'),
+  users: () => api.get('/admin/users'),
+  providers: () => api.get('/admin/providers'),
+  requests: () => api.get('/admin/requests'),
+  updateUser: (id, payload) => api.patch(`/admin/users/${id}`, payload),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  updateProvider: (id, payload) => api.patch(`/admin/providers/${id}`, payload)
 };
 
 export const providerApi = {

@@ -22,7 +22,6 @@ export function useAsync(fn, deps = [], { onSuccess, silent } = {}) {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => {

@@ -73,12 +73,21 @@ export default function Register() {
           </div>
           <div>
             <Label>Password</Label>
-            <Input type="password" value={form.password} onChange={set('password')} placeholder="min 4 characters" />
+            <Input
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              placeholder="min 4 characters"
+            />
           </div>
           {role === 'provider' && (
             <div>
               <Label>Business name</Label>
-              <Input value={form.businessName} onChange={set('businessName')} placeholder="e.g. Rahim Electronics" />
+              <Input
+                value={form.businessName}
+                onChange={set('businessName')}
+                placeholder="e.g. Rahim Electronics"
+              />
             </div>
           )}
           <Button type="submit" full loading={loading}>

@@ -30,8 +30,8 @@ export default function MyRequests() {
                     <Badge className={URGENCY_COLORS[r.urgency]}>{r.urgency}</Badge>
                   </div>
                   <p className="mt-1 text-sm text-ink-400">
-                    {formatDate(r.preferredDate)} · {r.preferredTimeWindow.start}–{r.preferredTimeWindow.end} ·{' '}
-                    {r.location?.address}
+                    {formatDate(r.preferredDate)} · {r.preferredTimeWindow.start}–{r.preferredTimeWindow.end}{' '}
+                    · {r.location?.address}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
@@ -48,7 +48,10 @@ export default function MyRequests() {
               title="No requests yet"
               hint="Book your first home service and track it here."
               action={
-                <Link to="/new-request" className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
+                <Link
+                  to="/new-request"
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+                >
                   <Icon name="plus" size={16} /> New request
                 </Link>
               }

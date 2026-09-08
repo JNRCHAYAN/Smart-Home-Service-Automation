@@ -1,12 +1,12 @@
 import { rankProviders, recommendationReason } from '../services/matchingEngine.js';
-import { activeProviders, saveCandidateMatches, requestById } from '../repo/repo.js';
+import { activeProviders, saveCandidateMatches, requestById, activeJobCountsMap } from '../repo/repo.js';
 import { SERVICE_CATEGORIES } from '../constants/index.js';
 import { notFound, ok } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 /** Build the pool of genuinely relevant providers for a requested service. */
-function relevantProviders(serviceType) {
-  const providers = activeProviders();
+async function relevantProviders(serviceType) {
+  const providers = await activeProviders();
   const category = SERVICE_CATEGORIES.find((c) => c.services.includes(serviceType));
   const related = category ? category.services : [serviceType];
   return providers.filter((p) => {
@@ -20,8 +20,11 @@ function maxPrice(providers, serviceType) {
   return Math.max(...prices, 1);
 }
 
-export function computeMatches(request) {
-  const pool = relevantProviders(request.serviceType);
+export async function computeMatches(request, excludeId) {
+  let pool = (await relevantProviders(request.serviceType)).map((p) => ({ ...p }));
+  if (excludeId) pool = pool.filter((p) => p._id !== excludeId);
+  const workload = await activeJobCountsMap();
+  for (const p of pool) p.activeJobCount = workload[p._id] || 0;
   const maxP = maxPrice(pool, request.serviceType);
   const category = SERVICE_CATEGORIES.find((c) => c.services.includes(request.serviceType));
   const related = category ? category.services : [request.serviceType];
@@ -46,9 +49,12 @@ export function computeMatches(request) {
 }
 
 export const getMatches = asyncHandler(async (req, res) => {
-  const request = requestById(req.params.id);
+  const request = await requestById(req.params.id);
   if (!request) return notFound(res, 'Request not found');
-  const matches = computeMatches(request);
-  saveCandidateMatches(request._id, matches);
+  // After a reschedule, exclude the previously assigned (rejected) provider.
+  const wasRescheduled = (request.timeline || []).some((t) => t.status === 'Rescheduled');
+  const excludeId = wasRescheduled ? request.matchedProviderId : null;
+  const matches = await computeMatches(request, excludeId);
+  await saveCandidateMatches(request._id, matches);
   return ok(res, matches, 'Top provider matches');
 });

@@ -5,7 +5,7 @@ import { ensureSeed } from './repo/repo.js';
 
 async function start() {
   await connectDb();
-  ensureSeed();
+  await ensureSeed();
   app.listen(env.port, () => {
     console.log(`[server] API running on http://localhost:${env.port}`);
     console.log(`[server] health check: http://localhost:${env.port}/health`);

@@ -2,6 +2,8 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore.js';
 import ToastHost from '../components/common/ToastHost.jsx';
 import Icon from '../components/common/Icon.jsx';
+import NotificationBell from '../components/common/NotificationBell.jsx';
+import Footer from '../components/common/Footer.jsx';
 
 export default function AppLayout() {
   const { user, token, logout } = useAuth();
@@ -12,7 +14,13 @@ export default function AppLayout() {
     navigate('/');
   };
 
-  const navForUser = user ? (user.role === 'provider' ? providerNav : customerNav) : [];
+  const navForUser = user
+    ? user.role === 'provider'
+      ? providerNav
+      : user.role === 'admin'
+        ? adminNav
+        : customerNav
+    : [];
 
   return (
     <div className="bg-page min-h-screen">
@@ -34,7 +42,9 @@ export default function AppLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-                    isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'
+                    isActive
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900'
                   }`
                 }
               >
@@ -47,10 +57,18 @@ export default function AppLayout() {
           <div className="flex items-center gap-3">
             {token && user ? (
               <div className="flex items-center gap-3">
+                <NotificationBell />
                 <div className="hidden text-right sm:block">
                   <div className="text-sm font-bold leading-tight text-ink-900">{user.name}</div>
                   <div className="text-xs capitalize text-ink-400">{user.role}</div>
                 </div>
+                <Link
+                  to="/settings"
+                  className="rounded-xl border border-ink-200 p-2 text-ink-500 hover:bg-ink-50 hover:text-ink-700"
+                  title="Settings"
+                >
+                  <Icon name="settings" size={18} />
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="rounded-xl border border-ink-200 p-2 text-ink-500 hover:bg-ink-50 hover:text-ink-700"
@@ -61,7 +79,10 @@ export default function AppLayout() {
               </div>
             ) : (
               <>
-                <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-500 hover:text-ink-900">
+                <Link
+                  to="/login"
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-500 hover:text-ink-900"
+                >
                   Log in
                 </Link>
                 <Link
@@ -76,10 +97,11 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main>
+      <main className="flex-1">
         <Outlet />
       </main>
 
+      <Footer />
       <ToastHost />
     </div>
   );
@@ -88,10 +110,19 @@ export default function AppLayout() {
 const customerNav = [
   { to: '/', label: 'Home', icon: 'home' },
   { to: '/new-request', label: 'Request', icon: 'plus' },
-  { to: '/my-requests', label: 'My Requests', icon: 'list' }
+  { to: '/my-requests', label: 'My Requests', icon: 'list' },
+  { to: '/settings', label: 'Settings', icon: 'settings' }
 ];
 
 const providerNav = [
   { to: '/provider', label: 'Dashboard', icon: 'dashboard' },
-  { to: '/provider/schedule', label: 'Schedule', icon: 'calendar' }
+  { to: '/provider/schedule', label: 'Schedule', icon: 'calendar' },
+  { to: '/settings', label: 'Settings', icon: 'settings' }
+];
+
+const adminNav = [
+  { to: '/admin', label: 'Overview', icon: 'dashboard' },
+  { to: '/admin/users', label: 'Users', icon: 'user' },
+  { to: '/admin/providers', label: 'Providers', icon: 'wrench' },
+  { to: '/admin/requests', label: 'Requests', icon: 'list' }
 ];

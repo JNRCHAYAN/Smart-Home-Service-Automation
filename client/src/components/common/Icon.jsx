@@ -1,10 +1,43 @@
 import {
-  Wrench, Droplet, Zap, Sparkles, Hammer, Truck, Car, Scissors,
-  Wifi, MapPin, Star, Clock, Phone, CheckCircle2, AlertTriangle,
-  X, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, Home,
-  User, LogOut, Calendar, LayoutDashboard, Inbox, ListChecks,
-  Search, Plus, CreditCard, Send, Menu, Loader2, RefreshCw,
-  CircleDollarSign, Ban
+  Wrench,
+  Droplet,
+  Zap,
+  Sparkles,
+  Hammer,
+  Truck,
+  Car,
+  Scissors,
+  Wifi,
+  MapPin,
+  Star,
+  Clock,
+  Phone,
+  CheckCircle2,
+  AlertTriangle,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  ShieldCheck,
+  Home,
+  User,
+  LogOut,
+  Calendar,
+  LayoutDashboard,
+  Inbox,
+  ListChecks,
+  Search,
+  Plus,
+  CreditCard,
+  Send,
+  Menu,
+  Loader2,
+  RefreshCw,
+  CircleDollarSign,
+  Ban,
+  Settings2,
+  Bell,
+  Receipt
 } from 'lucide-react';
 
 const MAP = {
@@ -43,7 +76,10 @@ const MAP = {
   loader: Loader2,
   refresh: RefreshCw,
   dollar: CircleDollarSign,
-  ban: Ban
+  ban: Ban,
+  settings: Settings2,
+  bell: Bell,
+  invoice: Receipt
 };
 
 export default function Icon({ name, size = 20, className = '', ...props }) {

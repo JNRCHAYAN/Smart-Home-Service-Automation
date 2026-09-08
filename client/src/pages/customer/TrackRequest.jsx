@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { requestApi, apiError } from '../../api/index.js';
 import StatusStepper from '../../components/common/StatusStepper.jsx';
 import Card from '../../components/common/Card.jsx';
@@ -7,15 +7,29 @@ import { Skeleton } from '../../components/common/Skeleton.jsx';
 import Button from '../../components/common/Button.jsx';
 import Badge from '../../components/common/Badge.jsx';
 import Icon from '../../components/common/Icon.jsx';
+import Modal from '../../components/common/Modal.jsx';
 import { toast } from '../../store/toastStore.js';
 import { statusClass, bdt, formatDate, timeAgo } from '../../utils/format.js';
 import { STATUS } from '../../constants/index.js';
 
 export default function TrackRequest() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
+  const [invoice, setInvoice] = useState(null);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+
+  const openInvoice = async () => {
+    try {
+      const inv = await requestApi.invoice(id);
+      setInvoice(inv);
+      setInvoiceOpen(true);
+    } catch (err) {
+      toast.error(apiError(err));
+    }
+  };
 
   const load = async (silent) => {
     try {
@@ -45,6 +59,16 @@ export default function TrackRequest() {
     }
   };
 
+  const reschedule = async () => {
+    try {
+      await requestApi.reschedule(id);
+      toast.info('Request rescheduled — finding a new provider');
+      navigate(`/request/${id}/matches`);
+    } catch (err) {
+      toast.error(apiError(err));
+    }
+  };
+
   const feedback = async () => {
     if (!rating) return;
     try {
@@ -56,11 +80,20 @@ export default function TrackRequest() {
     }
   };
 
-  if (loading) return <div className="mx-auto max-w-3xl px-4 py-10"><Skeleton className="h-8 w-1/2 mb-4" /><Skeleton className="h-24" /></div>;
+  if (loading)
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <Skeleton className="h-8 w-1/2 mb-4" />
+        <Skeleton className="h-24" />
+      </div>
+    );
 
-  if (!request) return <div className="mx-auto max-w-3xl px-4 py-10 text-center text-ink-400">Request not found.</div>;
+  if (!request)
+    return <div className="mx-auto max-w-3xl px-4 py-10 text-center text-ink-400">Request not found.</div>;
 
-  const providerName = request.candidateMatches?.find((m) => m.providerId === request.matchedProviderId)?.businessName;
+  const providerName = request.candidateMatches?.find(
+    (m) => m.providerId === request.matchedProviderId
+  )?.businessName;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -72,9 +105,15 @@ export default function TrackRequest() {
         <Badge className={statusClass(request.status)}>{request.status}</Badge>
       </div>
       <p className="text-sm text-ink-400">
-        {formatDate(request.preferredDate)} · {request.preferredTimeWindow.start}–{request.preferredTimeWindow.end} ·{' '}
-        {request.location?.address}
+        {formatDate(request.preferredDate)} · {request.preferredTimeWindow.start}–
+        {request.preferredTimeWindow.end} · {request.location?.address}
       </p>
+
+      {request.imageUrl && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-ink-100">
+          <img src={request.imageUrl} alt="issue" className="max-h-64 w-full object-contain bg-ink-50" />
+        </div>
+      )}
 
       <Card className="mt-6">
         <StatusStepper status={request.status} timeline={request.timeline} />
@@ -118,14 +157,16 @@ export default function TrackRequest() {
               />
               <div>
                 <div className="text-sm font-semibold text-ink-800">{t.status}</div>
-                <div className="text-xs text-ink-400">{formatDate(t.timestamp)} · {timeAgo(t.timestamp)}</div>
+                <div className="text-xs text-ink-400">
+                  {formatDate(t.timestamp)} · {timeAgo(t.timestamp)}
+                </div>
               </div>
             </li>
           ))}
         </ol>
       </Card>
 
-      {request.status === STATUS.COMPLETED && !request.feedback?.rating && (
+      {request.status === STATUS.COMPLETED && (
         <Card className="mt-4">
           <div className="mb-2 font-bold text-ink-900">Rate this service</div>
           <div className="flex items-center gap-1">
@@ -136,6 +177,9 @@ export default function TrackRequest() {
             ))}
             <Button className="ml-3" size="sm" onClick={feedback} disabled={!rating} icon="send">
               Submit
+            </Button>
+            <Button className="ml-3" variant="secondary" size="sm" onClick={openInvoice} icon="invoice">
+              View invoice
             </Button>
           </div>
         </Card>
@@ -149,11 +193,55 @@ export default function TrackRequest() {
         </div>
       )}
 
+      {(request.status === STATUS.REJECTED || request.status === STATUS.CANCELLED) && (
+        <div className="mt-4 flex justify-end">
+          <Button onClick={reschedule} icon="refresh">
+            Find a new provider
+          </Button>
+        </div>
+      )}
+
       <div className="mt-6 text-center">
         <Link to="/my-requests" className="text-sm font-semibold text-ink-400 hover:text-ink-700">
           ← Back to my requests
         </Link>
       </div>
+
+      <Modal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Invoice">
+        {invoice && (
+          <div>
+            <div className="flex items-start justify-between border-b border-ink-100 pb-4">
+              <div>
+                <div className="text-lg font-extrabold text-ink-900">{invoice.invoiceNo}</div>
+                <div className="text-sm text-ink-400">{invoice.date ? formatDate(invoice.date) : ''}</div>
+              </div>
+              <span className="rounded-xl bg-brand-50 px-3 py-1 text-sm font-bold text-brand-700">
+                {invoice.currency}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 py-4 text-sm">
+              <div className="text-ink-400">Provider</div>
+              <div className="text-right font-semibold text-ink-800">{invoice.providerName}</div>
+              <div className="text-ink-400">Service</div>
+              <div className="text-right font-semibold text-ink-800">{invoice.serviceType}</div>
+              <div className="text-ink-400">Customer</div>
+              <div className="text-right font-semibold text-ink-800">{invoice.customerName}</div>
+            </div>
+            <div className="space-y-2 border-t border-ink-100 pt-4 text-sm">
+              <Row k="Base charge" v={bdt(invoice.basePrice)} />
+              <Row k="Service fee (6%)" v={bdt(invoice.serviceCharge)} />
+              <Row k="VAT (5%)" v={bdt(invoice.tax)} />
+              <div className="flex justify-between border-t border-ink-100 pt-2 text-base font-extrabold text-ink-900">
+                <span>Total</span>
+                <span className="text-brand-600">{bdt(invoice.total)}</span>
+              </div>
+            </div>
+            <p className="mt-4 rounded-xl bg-ink-50 px-3 py-2 text-xs text-ink-400">
+              This is a computed summary (hackathon demo) — not a real payment.
+            </p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

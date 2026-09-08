@@ -18,7 +18,10 @@ export default function MatchResults() {
   const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
-    requestApi.get(id).then((r) => setRequest(r)).catch((e) => toast.error(apiError(e)));
+    requestApi
+      .get(id)
+      .then((r) => setRequest(r))
+      .catch((e) => toast.error(apiError(e)));
   }, [id]);
 
   const confirm = async (match) => {
@@ -38,9 +41,7 @@ export default function MatchResults() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
-          Smart match results
-        </p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">Smart match results</p>
         <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
           Top providers for your {request?.serviceType || 'service'}
         </h1>

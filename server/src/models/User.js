@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true },
     email: String,
     password: { type: String, required: true },
-    role: { type: String, enum: ['customer', 'provider'], required: true },
+    role: { type: String, enum: ['customer', 'provider', 'admin'], required: true },
     location: locationSchema,
     createdAt: { type: Date, default: Date.now }
   },

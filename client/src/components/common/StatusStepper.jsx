@@ -50,16 +50,10 @@ export default function StatusStepper({ status, timeline = [] }) {
                   >
                     {step}
                   </span>
-                  {ts && (
-                    <span className="text-[10px] text-ink-300">{formatDate(ts).split(',')[0]}</span>
-                  )}
+                  {ts && <span className="text-[10px] text-ink-300">{formatDate(ts).split(',')[0]}</span>}
                 </div>
                 {i < STATUS_FLOW.length - 1 && (
-                  <div
-                    className={`mx-1 mb-5 h-1 flex-1 rounded ${
-                      isDone ? 'bg-brand-500' : 'bg-ink-200'
-                    }`}
-                  />
+                  <div className={`mx-1 mb-5 h-1 flex-1 rounded ${isDone ? 'bg-brand-500' : 'bg-ink-200'}`} />
                 )}
               </div>
             </li>

@@ -7,8 +7,10 @@ import {
   confirm,
   updateStatus,
   cancel,
+  reschedule,
   myRequests,
-  feedback
+  feedback,
+  invoice
 } from '../controllers/requestController.js';
 
 const router = Router();
@@ -17,9 +19,11 @@ router.post('/', requireAuth, create);
 router.get('/', requireAuth, myRequests);
 router.get('/:id', requireAuth, getById);
 router.get('/:id/matches', requireAuth, getMatches);
+router.get('/:id/invoice', requireAuth, invoice);
 router.post('/:id/confirm', requireAuth, confirm);
 router.patch('/:id/status', requireAuth, updateStatus);
 router.post('/:id/cancel', requireAuth, cancel);
+router.post('/:id/reschedule', requireAuth, reschedule);
 router.post('/:id/feedback', requireAuth, feedback);
 
 export default router;

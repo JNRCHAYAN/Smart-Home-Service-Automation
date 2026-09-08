@@ -4,16 +4,22 @@ import { findUserById } from '../repo/repo.js';
 import { unauthorized, forbidden } from '../utils/response.js';
 
 /** Attach the authenticated user to req.currentUser (mock JWT auth). */
-export function auth(req, res, next) {
+export async function auth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return next();
+  let payload;
   try {
-    const payload = jwt.verify(token, env.jwtSecret);
-    const user = findUserById(payload.sub);
-    if (user) req.currentUser = user;
+    payload = jwt.verify(token, env.jwtSecret);
   } catch (_err) {
     /* invalid token — continue as anonymous */
+    return next();
+  }
+  try {
+    const user = await findUserById(payload.sub);
+    if (user) req.currentUser = user;
+  } catch (err) {
+    return next(err);
   }
   return next();
 }
