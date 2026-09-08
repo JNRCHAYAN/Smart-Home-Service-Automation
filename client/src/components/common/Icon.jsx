@@ -4,7 +4,7 @@ import {
   X, ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, Home,
   User, LogOut, Calendar, LayoutDashboard, Inbox, ListChecks,
   Search, Plus, CreditCard, Send, Menu, Loader2, RefreshCw,
-  CircleDollarSign, Ban
+  CircleDollarSign, Ban, Bot, Minimize2, MessageSquare
 } from 'lucide-react';
 
 const MAP = {
@@ -43,7 +43,10 @@ const MAP = {
   loader: Loader2,
   refresh: RefreshCw,
   dollar: CircleDollarSign,
-  ban: Ban
+  ban: Ban,
+  bot: Bot,
+  minimize: Minimize2,
+  messagesquare: MessageSquare
 };
 
 export default function Icon({ name, size = 20, className = '', ...props }) {

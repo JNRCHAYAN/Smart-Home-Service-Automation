@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import providerRoutes from './routes/providerRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(auth);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/providers', providerRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api', publicRoutes);
 
 app.get('/health', (req, res) => res.json({ success: true, message: 'ok', data: { status: 'up' } }));
