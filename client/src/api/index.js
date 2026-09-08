@@ -28,4 +28,10 @@ export const providerApi = {
   updateAvailability: (availability) => api.patch('/providers/availability', { availability })
 };
 
+export const chatApi = {
+  send: (messages, stream = false) => api.post('/chat', { messages, stream }),
+  stream: (messages) => api.post('/chat', { messages, stream: true }),
+  health: () => api.get('/chat/health')
+};
+
 export const apiError = (err) => err?.message || 'Something went wrong';

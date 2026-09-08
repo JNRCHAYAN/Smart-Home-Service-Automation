@@ -46,3 +46,9 @@ export function statusStep(status) {
 export function statusClass(status) {
   return STATUS_COLORS[status] || 'bg-slate-100 text-slate-600';
 }
+
+export function formatTime(timestamp) {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}

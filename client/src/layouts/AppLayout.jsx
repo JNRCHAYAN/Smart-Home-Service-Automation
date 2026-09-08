@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore.js';
 import ToastHost from '../components/common/ToastHost.jsx';
 import Icon from '../components/common/Icon.jsx';
+import ChatWidget from '../components/chat/ChatWidget.jsx';
 
 export default function AppLayout() {
   const { user, token, logout } = useAuth();
@@ -81,6 +82,7 @@ export default function AppLayout() {
       </main>
 
       <ToastHost />
+      {token && user && <ChatWidget />}
     </div>
   );
 }
