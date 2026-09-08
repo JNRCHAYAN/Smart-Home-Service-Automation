@@ -6,11 +6,13 @@ import {
   confirmMatch,
   setStatus,
   cancelRequest,
+  rescheduleRequest,
   categoryForService,
-  addFeedback
+  addFeedback,
+  invoiceFor
 } from '../repo/repo.js';
 import { STATUS } from '../constants/index.js';
-import { ok, created, badRequest, notFound, unauthorized, forbidden } from '../utils/response.js';
+import { ok, created, badRequest, notFound, unauthorized } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const requestSchema = z.object({
@@ -36,7 +38,7 @@ export const create = asyncHandler(async (req, res) => {
   const data = parsed.data;
   const category = categoryForService(data.serviceType) || 'General Home Service';
 
-  const request = createRequest({
+  const request = await createRequest({
     customerId: req.currentUser._id,
     serviceType: data.serviceType,
     category,
@@ -52,13 +54,13 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const getById = asyncHandler(async (req, res) => {
-  const request = requestById(req.params.id);
+  const request = await requestById(req.params.id);
   if (!request) return notFound(res, 'Request not found');
   return ok(res, request);
 });
 
 export const getMatches = asyncHandler(async (req, res) => {
-  const request = requestById(req.params.id);
+  const request = await requestById(req.params.id);
   if (!request) return notFound(res, 'Request not found');
   const { getMatches: runMatches } = await import('./matchController.js');
   req.params.id = request._id;
@@ -69,7 +71,7 @@ export const confirm = asyncHandler(async (req, res) => {
   const { providerId } = req.body || {};
   if (!providerId) return badRequest(res, 'providerId is required');
   try {
-    const request = confirmMatch(req.params.id, providerId);
+    const request = await confirmMatch(req.params.id, providerId);
     return ok(res, request, 'Provider confirmed');
   } catch (err) {
     return badRequest(res, err.message);
@@ -78,16 +80,10 @@ export const confirm = asyncHandler(async (req, res) => {
 
 export const updateStatus = asyncHandler(async (req, res) => {
   const { status } = req.body || {};
-  const allowed = [
-    STATUS.ACCEPTED,
-    STATUS.ON_THE_WAY,
-    STATUS.IN_PROGRESS,
-    STATUS.COMPLETED,
-    STATUS.REJECTED
-  ];
+  const allowed = [STATUS.ACCEPTED, STATUS.ON_THE_WAY, STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.REJECTED];
   if (!allowed.includes(status)) return badRequest(res, `Status must be one of ${allowed.join(', ')}`);
   try {
-    const updated = setStatus(req.params.id, status, req.currentUser?._id);
+    const updated = await setStatus(req.params.id, status, req.currentUser?._id);
     return ok(res, updated, 'Status updated');
   } catch (err) {
     return badRequest(res, err.message);
@@ -96,8 +92,17 @@ export const updateStatus = asyncHandler(async (req, res) => {
 
 export const cancel = asyncHandler(async (req, res) => {
   try {
-    const updated = cancelRequest(req.params.id, req.currentUser._id);
+    const updated = await cancelRequest(req.params.id, req.currentUser._id);
     return ok(res, updated, 'Request cancelled');
+  } catch (err) {
+    return badRequest(res, err.message);
+  }
+});
+
+export const reschedule = asyncHandler(async (req, res) => {
+  try {
+    const updated = await rescheduleRequest(req.params.id, req.currentUser._id);
+    return ok(res, updated, 'Request rescheduled — finding a new provider');
   } catch (err) {
     return badRequest(res, err.message);
   }
@@ -105,13 +110,19 @@ export const cancel = asyncHandler(async (req, res) => {
 
 export const myRequests = asyncHandler(async (req, res) => {
   if (!req.currentUser) return unauthorized(res);
-  const requests = requestsByCustomer(req.currentUser._id);
+  const requests = await requestsByCustomer(req.currentUser._id);
   return ok(res, requests);
 });
 
 export const feedback = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body || {};
   if (!rating) return badRequest(res, 'rating is required');
-  const updated = addFeedback(req.params.id, Number(rating), comment || '');
+  const updated = await addFeedback(req.params.id, Number(rating), comment || '');
   return ok(res, updated, 'Feedback saved');
+});
+
+export const invoice = asyncHandler(async (req, res) => {
+  const data = await invoiceFor(req.params.id);
+  if (!data) return notFound(res, 'Request not found');
+  return ok(res, data, 'Invoice generated');
 });

@@ -31,12 +31,28 @@ export default function NewRequest() {
     date: today(),
     timeWindow: `09:00 – 12:00|09:00|12:00`,
     urgency: 'Normal',
+    imageUrl: '',
     contactName: user?.name || '',
     contactPhone: user?.phone || ''
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const category = useMemo(() => (services || []).find((c) => c.key === form.category), [services, form.category]);
+  const onImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('Image must be under 3MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setForm((f) => ({ ...f, imageUrl: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const category = useMemo(
+    () => (services || []).find((c) => c.key === form.category),
+    [services, form.category]
+  );
   const area = useMemo(() => DHK_AREAS.find((a) => a.label === form.area), [form.area]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -60,6 +76,7 @@ export default function NewRequest() {
       preferredTimeWindow: { start, end },
       urgency: form.urgency,
       problemDetails: form.problemDetails,
+      imageUrl: form.imageUrl,
       contact: { name: form.contactName, phone: form.contactPhone }
     };
     try {
@@ -93,10 +110,14 @@ export default function NewRequest() {
             >
               {i < step ? <Icon name="check" size={16} /> : i + 1}
             </div>
-            <span className={`hidden text-sm font-semibold sm:block ${i === step ? 'text-ink-900' : 'text-ink-400'}`}>
+            <span
+              className={`hidden text-sm font-semibold sm:block ${i === step ? 'text-ink-900' : 'text-ink-400'}`}
+            >
               {s}
             </span>
-            {i < STEPS.length - 1 && <div className={`h-1 flex-1 rounded ${i < step ? 'bg-brand-500' : 'bg-ink-100'}`} />}
+            {i < STEPS.length - 1 && (
+              <div className={`h-1 flex-1 rounded ${i < step ? 'bg-brand-500' : 'bg-ink-100'}`} />
+            )}
           </div>
         ))}
       </div>
@@ -148,7 +169,11 @@ export default function NewRequest() {
           <div className="space-y-4">
             <div>
               <Label>Location area</Label>
-              <Select value={form.area} onChange={set('area')} options={DHK_AREAS.map((a) => ({ value: a.label, label: a.label }))} />
+              <Select
+                value={form.area}
+                onChange={set('area')}
+                options={DHK_AREAS.map((a) => ({ value: a.label, label: a.label }))}
+              />
             </div>
             <div>
               <Label>Describe the problem</Label>
@@ -159,8 +184,21 @@ export default function NewRequest() {
                 placeholder="e.g. AC not cooling, making a loud noise from the outdoor unit…"
               />
             </div>
-            <div className="rounded-xl bg-ink-50 px-4 py-3 text-xs text-ink-400">
-              An optional image can be attached after request creation.
+            <div>
+              <Label>Photo (optional)</Label>
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-ink-300 bg-ink-50/50 px-4 py-4 transition-colors hover:border-brand-400 hover:bg-brand-50/40">
+                <input type="file" accept="image/*" className="hidden" onChange={onImage} />
+                {form.imageUrl ? (
+                  <img src={form.imageUrl} alt="uploaded" className="h-20 w-20 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-ink-400">
+                    <Icon name="plus" size={20} />
+                  </span>
+                )}
+                <span className="text-sm text-ink-500">
+                  {form.imageUrl ? 'Attached — click to replace' : 'Click to add a photo of the problem'}
+                </span>
+              </label>
             </div>
           </div>
         )}
@@ -242,7 +280,12 @@ export default function NewRequest() {
         )}
 
         <div className="mt-6 flex items-center justify-between border-t border-ink-100 pt-5">
-          <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} icon="chevronleft">
+          <Button
+            variant="ghost"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            disabled={step === 0}
+            icon="chevronleft"
+          >
             Back
           </Button>
           {step < STEPS.length - 1 ? (

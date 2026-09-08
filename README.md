@@ -12,15 +12,15 @@ re-tuned per urgency level.
 
 - **Client:** React 18 + Vite, React Router, Zustand, Tailwind CSS, lucide-react
 - **Server:** Node.js + Express, REST API, JWT (mock auth), Zod validation
-- **Persistence:** Mongoose schemas provided; ships with an embedded **file-backed store**
-  (`server/data/db.json`) so it runs **out of the box with no infrastructure** — ideal for a
-  live demo. Set `MONGODB_URI` to opt into real MongoDB.
+- **Persistence:** **MongoDB via Mongoose** (`server/src/models`). The server requires a reachable
+  `MONGODB_URI` and refuses to start without it — no file-backed fallback.
 
 ## Quick start
 
 ```bash
+cp .env.example server/.env   # then set MONGODB_URI in server/.env (required)
 npm install          # installs both workspaces
-npm run seed         # (optional) re-seed demo data — happens automatically on first run
+npm run seed         # (optional) seeds demo data — happens automatically on first run
 npm run dev          # starts server (:5001) + client (:5173) together
 ```
 
@@ -31,10 +31,13 @@ Open http://localhost:5173
 
 ### Demo accounts
 
-| Role     | Phone         | Password |
-|----------|---------------|----------|
-| Customer | 01700000000   | pass1234 |
-| Provider | 01800000001   | pass1234 |
+| Role     | Phone       | Password  |
+| -------- | ----------- | --------- |
+| Customer | 01700000000 | pass1234  |
+| Provider | 01800000001 | pass1234  |
+| Admin    | 01900000000 | admin1234 |
+
+Accounts are unique by **phone and email** (case-insensitive) — duplicate sign-ups are rejected.
 
 ## The Matching Engine
 
@@ -50,12 +53,13 @@ score = w_avail * availability + w_dist * (1 - dist/maxRadius)
 ```
 
 | Urgency   | Availability | Distance | Rating | Price | Expertise |
-|-----------|--------------|----------|--------|-------|-----------|
+| --------- | ------------ | -------- | ------ | ----- | --------- |
 | Normal    | 0.20         | 0.20     | 0.25   | 0.20  | 0.15      |
 | Urgent    | 0.35         | 0.30     | 0.15   | 0.10  | 0.10      |
 | Emergency | 0.45         | 0.35     | 0.10   | 0.05  | 0.05      |
 
 Additional behaviour:
+
 - **Availability is a hard gate** — providers with no free slot are never recommended.
 - **Near-miss credit** — a provider free on a nearby day still scores (0.5 availability).
 - **Double-booking guard** — confirming a provider atomically locks the slot; if the exact
@@ -95,8 +99,8 @@ Responses use a consistent envelope: `{ success, message, data }`.
 └── server/
     ├── src/
     │   ├── config/            # env, db
-    │   ├── models/            # mongoose schemas
-    │   ├── repo/              # embedded store + repository
+    │   ├── models/            # mongoose schemas (User, Provider, ServiceRequest)
+    │   ├── repo/              # MongoDB repository layer
     │   ├── services/          # matchingEngine, seedData, seed
     │   ├── controllers/       # auth, request, match, provider
     │   ├── routes/            # auth, requests, providers, public
@@ -106,6 +110,33 @@ Responses use a consistent envelope: `{ success, message, data }`.
     └── data/                  # file-backed store (git-ignored)
 ```
 
+## Super Admin (full-site control)
+
+`/admin` — protected by an `admin` role. The seeded admin can:
+
+- **Overview**: platform stats (customers, providers, requests, revenue).
+- **Users**: list **both** customers and provider accounts; edit name/phone/email/role, or delete an account (and its provider profile).
+- **Providers**: edit business info/rating, view services, and **activate/deactivate** providers.
+- **Requests**: review every request across the platform with status and contact details.
+
+## Design system
+
+Applied from the `ui-ux-pro-max` skill (verified match: _Home Services (Plumber/Electrician)_) —
+see `design-system/servio/MASTER.md`.
+
+- **Trust-blue palette** (`#1E40AF`) + **safety-orange** CTAs (`#EA580C`), soft-blue background.
+- **Poppins** headings + **Open Sans** body.
+- Trust & Authority landing pattern, WCAG focus states, `prefers-reduced-motion`, 44px touch targets.
+
+## Extra features (bonuses from the brief)
+
+- **Customer notifications** — bell dropdown in the navbar driven by each request's timeline.
+- **Automatic invoice** — computed summary (base + 6% fee + 5% VAT) shown on completed jobs.
+- **Auto-reschedule** — a rejected/cancelled job can be re-matched, excluding the previous provider.
+- **Profile & Settings** (`/settings`) — customers edit name/email/location; providers edit business info,
+  services & prices and toggle their 7-day work schedule.
+- **Image upload** — optional photo on a service request.
+
 ## Definition of done (MVP) — all met
 
 - [x] Customer selects a service, completes the request wizard and submits
@@ -114,6 +145,17 @@ Responses use a consistent envelope: `{ success, message, data }`.
 - [x] Customer sees a live status tracker (Requested → … → Completed)
 - [x] Provider dashboard lists incoming requests, accepts/rejects, updates status
 - [x] Urgency level visibly changes matching priority/weights
+- [x] Profile & settings for both customer and provider
 - [x] Fully responsive, cohesive design
 - [x] Realistic, demo-ready seed data (Rahim Electronics & Dhanmondi AC-repair scenario)
+
+## Code quality
+
+- ESLint flat config (`eslint.config.js`) + Prettier (`.prettierrc`) — `npm run lint` and `npm run format`.
+- Backend logic is isolated in `services/` and unit-tested (`npm test`).
+- Data layer is backed by **MongoDB** through the Mongoose models in `server/src/models`; the
+  connection string is read from `MONGODB_URI` in `server/.env`.
+
+```
+
 ```

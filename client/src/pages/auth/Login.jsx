@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const res = await login(form.phone, form.password);
       toast.success(`Welcome back, ${res.user.name.split(' ')[0]}!`);
-      navigate(res.user.role === 'provider' ? '/provider' : '/');
+      navigate(res.user.role === 'provider' ? '/provider' : res.user.role === 'admin' ? '/admin' : '/');
     } catch (err) {
       toast.error(apiError(err));
     } finally {
@@ -54,10 +54,11 @@ export default function Login() {
             Log in
           </Button>
         </form>
-        <div className="mt-4 rounded-xl bg-ink-50 px-4 py-3 text-xs text-ink-400">
-          <strong className="text-brand-600">Demo accounts</strong>
-          <p>Customer: 01700000000 · pass1234</p>
-          <p>Provider: 01800000001 · pass1234</p>
+        <div className="mt-4 space-y-1 rounded-xl bg-brand-50 px-4 py-3 text-xs text-ink-600">
+          <strong className="text-brand-700">Demo accounts</strong>
+          <p>Customer — 01700000000 · pass1234</p>
+          <p>Provider — 01800000001 · pass1234</p>
+          <p>Admin — 01900000000 · admin1234</p>
         </div>
         <p className="mt-4 text-center text-sm text-ink-400">
           New here?{' '}

@@ -70,13 +70,7 @@ export default function ProviderMatchCard({ match, rank, request, onConfirm, con
           })}
         </div>
 
-        <Button
-          className="mt-5"
-          full
-          icon="check"
-          loading={confirming}
-          onClick={() => onConfirm(match)}
-        >
+        <Button className="mt-5" full icon="check" loading={confirming} onClick={() => onConfirm(match)}>
           Confirm provider
         </Button>
       </div>

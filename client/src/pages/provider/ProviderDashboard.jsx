@@ -14,7 +14,11 @@ const TABS = [
   { key: 'completed', label: 'Completed' }
 ];
 
-const NEXT = { [STATUS.ACCEPTED]: STATUS.ON_THE_WAY, [STATUS.ON_THE_WAY]: STATUS.IN_PROGRESS, [STATUS.IN_PROGRESS]: STATUS.COMPLETED };
+const NEXT = {
+  [STATUS.ACCEPTED]: STATUS.ON_THE_WAY,
+  [STATUS.ON_THE_WAY]: STATUS.IN_PROGRESS,
+  [STATUS.IN_PROGRESS]: STATUS.COMPLETED
+};
 
 export default function ProviderDashboard() {
   const { data, loading, run } = useAsync(() => providerApi.dashboard(), []);
@@ -35,7 +39,11 @@ export default function ProviderDashboard() {
   };
 
   if (loading || !data) {
-    return <div className="mx-auto max-w-5xl px-4 py-10"><div className="h-24 animate-pulse rounded-2xl bg-ink-100" /></div>;
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-10">
+        <div className="h-24 animate-pulse rounded-2xl bg-ink-100" />
+      </div>
+    );
   }
 
   const list = data[tab] || [];
@@ -44,7 +52,12 @@ export default function ProviderDashboard() {
 
   const counters = [
     { label: 'Incoming', value: data.counts.incoming, icon: 'inbox', color: 'text-blue-500 bg-blue-50' },
-    { label: 'Active jobs', value: data.counts.active, icon: 'hammer', color: 'text-orange-500 bg-orange-50' },
+    {
+      label: 'Active jobs',
+      value: data.counts.active,
+      icon: 'hammer',
+      color: 'text-orange-500 bg-orange-50'
+    },
     { label: 'Completed', value: data.counts.completed, icon: 'check', color: 'text-green-500 bg-green-50' },
     { label: 'Load', value: activeJobCount, icon: 'dashboard', color: 'text-violet-500 bg-violet-50' }
   ];
@@ -54,7 +67,8 @@ export default function ProviderDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-ink-900">
-            <Icon name="dashboard" size={24} className="text-brand-600" /> {provider?.businessName || 'Dashboard'}
+            <Icon name="dashboard" size={24} className="text-brand-600" />{' '}
+            {provider?.businessName || 'Dashboard'}
           </h1>
           <p className="mt-1 text-sm text-ink-400">Manage incoming and active service jobs.</p>
         </div>
@@ -87,7 +101,12 @@ export default function ProviderDashboard() {
               tab === t.key ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-400'
             }`}
           >
-            {t.label} {data.counts[t.key] > 0 && <span className="ml-1 rounded-full bg-brand-600 px-1.5 text-xs text-white">{data.counts[t.key]}</span>}
+            {t.label}{' '}
+            {data.counts[t.key] > 0 && (
+              <span className="ml-1 rounded-full bg-brand-600 px-1.5 text-xs text-white">
+                {data.counts[t.key]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -97,8 +116,18 @@ export default function ProviderDashboard() {
           <Card>
             <EmptyState
               icon={tab === 'active' ? 'clock' : 'inbox'}
-              title={tab === 'active' ? 'No active jobs' : tab === 'completed' ? 'Nothing completed yet' : 'No incoming requests'}
-              hint={tab === 'incoming' ? 'New matched requests will appear here for you to accept.' : 'You are all caught up.'}
+              title={
+                tab === 'active'
+                  ? 'No active jobs'
+                  : tab === 'completed'
+                    ? 'Nothing completed yet'
+                    : 'No incoming requests'
+              }
+              hint={
+                tab === 'incoming'
+                  ? 'New matched requests will appear here for you to accept.'
+                  : 'You are all caught up.'
+              }
             />
           </Card>
         ) : (

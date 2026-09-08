@@ -11,6 +11,8 @@ import TrackRequest from './pages/customer/TrackRequest.jsx';
 import MyRequests from './pages/customer/MyRequests.jsx';
 import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import ProviderSchedule from './pages/provider/ProviderSchedule.jsx';
+import Settings from './pages/Settings.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 
 function Guard({ role, children }) {
   const { token, user } = useAuth();
@@ -59,6 +61,14 @@ export default function App() {
             </Guard>
           }
         />
+        <Route
+          path="/settings"
+          element={
+            <Guard>
+              <Settings />
+            </Guard>
+          }
+        />
 
         <Route
           path="/provider"
@@ -73,6 +83,15 @@ export default function App() {
           element={
             <Guard role="provider">
               <ProviderSchedule />
+            </Guard>
+          }
+        />
+
+        <Route
+          path="/admin/*"
+          element={
+            <Guard role="admin">
+              <AdminDashboard />
             </Guard>
           }
         />

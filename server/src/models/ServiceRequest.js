@@ -3,8 +3,14 @@ import mongoose from 'mongoose';
 const candidateSchema = new mongoose.Schema(
   {
     providerId: String,
+    businessName: String,
+    rating: Number,
+    distanceKm: Number,
+    price: Number,
+    serviceTypes: [String],
     score: Number,
-    breakdown: Object,
+    breakdown: mongoose.Schema.Types.Mixed,
+    reason: String,
     matched: { type: Boolean, default: false }
   },
   { _id: false }
@@ -31,15 +37,7 @@ const requestSchema = new mongoose.Schema({
   contact: { name: String, phone: String },
   status: {
     type: String,
-    enum: [
-      'Requested',
-      'Accepted',
-      'On the Way',
-      'In Progress',
-      'Completed',
-      'Rejected',
-      'Cancelled'
-    ],
+    enum: ['Requested', 'Accepted', 'On the Way', 'In Progress', 'Completed', 'Rejected', 'Cancelled'],
     default: 'Requested'
   },
   matchedProviderId: String,

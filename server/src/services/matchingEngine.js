@@ -15,9 +15,7 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
@@ -71,7 +69,9 @@ export function availabilityScore(provider, request) {
 export function expertiseMatchScore(serviceTypes, requestedService, relatedServices = []) {
   if (!Array.isArray(serviceTypes) || serviceTypes.length === 0) return 0;
   const normalized = serviceTypes.map((s) => String(s).trim().toLowerCase());
-  const target = String(requestedService || '').trim().toLowerCase();
+  const target = String(requestedService || '')
+    .trim()
+    .toLowerCase();
   if (!target) return 0;
   if (normalized.includes(target)) return 1;
   // Partial credit for a sibling service in the same category.
@@ -128,7 +128,6 @@ function providerPrice(provider, requestedService) {
  */
 export function rankProviders({ providers, request, maxPrice, relatedServices = [], limit = 3 }) {
   const weights = MATCH_WEIGHTS[request.urgency] || MATCH_WEIGHTS.Normal;
-  const a = 1; // area coords are already in km scale through haversine
 
   const scored = providers
     .filter((p) => p && p.isActive !== false)

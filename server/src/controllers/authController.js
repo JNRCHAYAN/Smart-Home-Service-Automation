@@ -4,11 +4,12 @@ import bcrypt from 'bcryptjs';
 import env from '../config/env.js';
 import {
   findUserByPhone,
+  findUserByEmail,
   createUser,
   createProviderProfile,
   providerByUserId
 } from '../repo/repo.js';
-import { ok, created, badRequest, unauthorized, forbidden } from '../utils/response.js';
+import { ok, created, badRequest, unauthorized } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 function tokenFor(user) {
@@ -43,12 +44,14 @@ export const register = asyncHandler(async (req, res) => {
   if (!parsed.success) return badRequest(res, parsed.error.issues[0].message);
   const data = parsed.data;
 
-  if (findUserByPhone(data.phone)) return badRequest(res, 'Phone number already registered');
+  if (await findUserByPhone(data.phone)) return badRequest(res, 'This phone number is already registered');
+  if (data.email && (await findUserByEmail(data.email)))
+    return badRequest(res, 'This email is already registered');
 
-  const user = createUser({
+  const user = await createUser({
     name: data.name,
     phone: data.phone,
-    email: data.email || undefined,
+    email: data.email ? data.email.toLowerCase() : undefined,
     password: data.password,
     role: data.role,
     location: data.location
@@ -56,7 +59,7 @@ export const register = asyncHandler(async (req, res) => {
 
   let provider = null;
   if (data.role === 'provider') {
-    provider = createProviderProfile(user._id, data.businessName || data.name);
+    provider = await createProviderProfile(user._id, data.businessName || data.name);
   }
 
   return created(res, { token: tokenFor(user), user: publicUser(user), provider });
@@ -66,18 +69,18 @@ export const login = asyncHandler(async (req, res) => {
   const { phone, password } = req.body || {};
   if (!phone || !password) return badRequest(res, 'Phone and password are required');
 
-  const user = findUserByPhone(phone);
+  const user = await findUserByPhone(phone);
   if (!user) return unauthorized(res, 'Invalid phone or password');
 
   const valid = bcrypt.compareSync(password, user.password);
   if (!valid) return unauthorized(res, 'Invalid phone or password');
 
-  const provider = user.role === 'provider' ? providerByUserId(user._id) : null;
+  const provider = user.role === 'provider' ? await providerByUserId(user._id) : null;
   return ok(res, { token: tokenFor(user), user: publicUser(user), provider });
 });
 
 export const me = asyncHandler(async (req, res) => {
   if (!req.currentUser) return unauthorized(res);
-  const provider = req.currentUser.role === 'provider' ? providerByUserId(req.currentUser._id) : null;
+  const provider = req.currentUser.role === 'provider' ? await providerByUserId(req.currentUser._id) : null;
   return ok(res, { user: publicUser(req.currentUser), provider });
 });
