@@ -3,6 +3,10 @@ import env from '../config/env.js';
 import { findUserById } from '../repo/repo.js';
 import { unauthorized, forbidden } from '../utils/response.js';
 
+// Auth middleware. Runs globally: it verifies the optional Bearer JWT and sets
+// req.currentUser, leaving anonymous requests untouched. requireAuth and
+// requireRole below enforce access where a route needs it.
+
 /** Attach the authenticated user to req.currentUser (mock JWT auth). */
 export async function auth(req, res, next) {
   const header = req.headers.authorization || '';

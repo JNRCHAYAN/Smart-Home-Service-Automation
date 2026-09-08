@@ -4,6 +4,9 @@ import Icon from '../common/Icon.jsx';
 import { bdt, formatDate, statusClass } from '../../utils/format.js';
 import { URGENCY_VARIANTS } from '../../constants/index.js';
 
+// Provider-facing job card. Props: job (request payload), onAccept/onReject
+// (only when status is Requested) and onAdvance (only while active); `busy`
+// disables the action while a request is in flight.
 export function JobCard({ job, onAccept, onReject, onAdvance, busy }) {
   const canAccept = job.status === 'Requested';
   const active = ['Accepted', 'On the Way', 'In Progress'].includes(job.status);
@@ -77,6 +80,7 @@ export function JobCard({ job, onAccept, onReject, onAdvance, busy }) {
 }
 
 function nextLabel(status) {
+  // Copy for the single "advance" action as a job moves through its lifecycle.
   const map = {
     Accepted: 'Start job',
     'On the Way': 'Mark in progress',

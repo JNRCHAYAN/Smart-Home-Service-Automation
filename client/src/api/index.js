@@ -1,5 +1,8 @@
 import { api } from './client.js';
 
+// Typed endpoint groups over the shared axios instance. Responses are already
+// unwrapped by the client interceptor (see client.js), so callers get the
+// domain payload directly.
 export const authApi = {
   login: (payload) => api.post('/auth/login', payload),
   register: (payload) => api.post('/auth/register', payload),
@@ -16,6 +19,8 @@ export const requestApi = {
   list: () => api.get('/requests'),
   get: (id) => api.get(`/requests/${id}`),
   matches: (id) => api.get(`/requests/${id}/matches`),
+  availability: (id) => api.get(`/requests/${id}/availability`),
+  updateSlot: (id, payload) => api.patch(`/requests/${id}/slot`, payload),
   confirm: (id, providerId) => api.post(`/requests/${id}/confirm`, { providerId }),
   updateStatus: (id, status) => api.patch(`/requests/${id}/status`, { status }),
   cancel: (id) => api.post(`/requests/${id}/cancel`),
@@ -51,6 +56,9 @@ export const providerApi = {
 
 export const chatApi = {
   send: (messages, stream = false) => api.post('/chat', { messages, stream }),
+  // Streaming variant uses raw fetch (not the axios instance) because the SSE
+  // response must be read incrementally from response.body; axios would buffer
+  // the whole body before resolving.
   stream: async (messages) => {
     const baseURL = import.meta.env.VITE_API_URL || '/api';
     const token = localStorage.getItem('token');

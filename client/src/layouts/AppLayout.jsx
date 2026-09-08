@@ -10,6 +10,9 @@ import NotificationBell from '../components/common/NotificationBell.jsx';
 import Footer from '../components/common/Footer.jsx';
 import { cn } from '../utils/cn.js';
 
+// Shell for every route: sticky header with role-aware nav, an <Outlet/> for
+// the active page, plus the shared Footer/ToastHost/ChatWidget overlays.
+// Nav items are chosen from ROLE_NAV by the signed-in user's role.
 const ROLE_NAV = {
   customer: [
     { to: '/', label: 'Home', icon: 'home', end: true },
@@ -54,6 +57,7 @@ const initials = (name = '') =>
 function ThemeMenu() {
   const { mode, theme, setMode } = useTheme();
   const [open, setOpen] = useState(false);
+  // Dismiss the popover on outside click or Escape, driven by the shared hook.
   const close = useCallback(() => setOpen(false), []);
   const ref = useClickOutside(close);
   const options = [
@@ -215,6 +219,9 @@ function MobileMenu({ user, nav }) {
       </button>
 
       {open && (
+        // Full-viewport scrim sits behind the drawer; clicking it (or a nav
+        // item) closes the menu, which is the mobile equivalent of the desktop
+        // click-outside/Escape handling.
         <div className="fixed inset-0 top-16 z-40 lg:hidden">
           <button
             type="button"
@@ -248,9 +255,7 @@ function MobileMenu({ user, nav }) {
                     className={({ isActive }) =>
                       cn(
                         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors',
-                        isActive
-                          ? 'bg-brand-soft text-brand-text'
-                          : 'text-muted hover:bg-inset hover:text-fg'
+                        isActive ? 'bg-brand-soft text-brand-text' : 'text-muted hover:bg-inset hover:text-fg'
                       )
                     }
                   >
@@ -323,9 +328,7 @@ export default function AppLayout() {
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
-                    isActive
-                      ? 'bg-brand-soft text-brand-text'
-                      : 'text-muted hover:bg-inset hover:text-fg'
+                    isActive ? 'bg-brand-soft text-brand-text' : 'text-muted hover:bg-inset hover:text-fg'
                   )
                 }
               >
@@ -371,6 +374,7 @@ export default function AppLayout() {
 
       <Footer />
       <ToastHost />
+      {/* AI assistant only mounts once a user is signed in */}
       {token && user && <ChatWidget />}
     </div>
   );

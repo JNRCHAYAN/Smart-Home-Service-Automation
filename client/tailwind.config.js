@@ -1,9 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+// Every colour utility in this theme resolves to a CSS custom property defined
+// in index.css (:root for light, .dark overrides). Tokens are documented in
+// design-system/servio/MASTER.md.
 export default {
+  // `.dark` is toggled on <html> by the theme store, so dark variants follow
+  // that class rather than the OS media query.
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // Semantic role → CSS var mapping. Each status exposes DEFAULT (solid),
+      // soft (fill), text (accent on the soft fill) and border.
       colors: {
         canvas: 'var(--canvas)',
         surface: 'var(--surface)',
@@ -15,6 +22,8 @@ export default {
         muted: 'var(--muted)',
         faint: 'var(--faint)',
         brand: {
+          // brand.DEFAULT is the solid action colour (fixed across themes);
+          // brand.text is the readable-on-surfaces accent that swaps in dark.
           DEFAULT: 'var(--brand)',
           hover: 'var(--brand-hover)',
           soft: 'var(--brand-soft)',
@@ -56,6 +65,8 @@ export default {
           'Segoe UI',
           'sans-serif'
         ],
+        // Bengali (Noto Sans Bengali) is kept in the stack for UI copy that may
+        // include Bangla alongside Latin text.
         heading: [
           'Poppins',
           'Open Sans',
@@ -71,6 +82,8 @@ export default {
         glow: '0 0 0 4px var(--brand-soft)'
       },
       keyframes: {
+        // `shimmer` drives the .skeleton sweep in index.css (translateX
+        // -100% → 100%); the others back the animate-* utilities below.
         'fade-in': {
           from: { opacity: '0' },
           to: { opacity: '1' }

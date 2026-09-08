@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import Icon from './Icon.jsx';
 import { cn } from '../../utils/cn.js';
 
+// Dialog primitive: overlay scrim + centred panel, optional footer slot.
+// Props: open, onClose, title, children, wide (wider panel), footer.
 export default function Modal({ open, onClose, title, children, wide, footer }) {
   const closeRef = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -9,6 +11,8 @@ export default function Modal({ open, onClose, title, children, wide, footer }) 
 
   useEffect(() => {
     if (!open) return;
+    // While open: lock body scroll, close on Escape, and focus the panel.
+    // onClose is mirrored into a ref so the effect never needs to re-run.
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e) => {

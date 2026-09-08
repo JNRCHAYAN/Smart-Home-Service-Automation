@@ -14,6 +14,9 @@ import { statusClass, formatDate, bdt } from '../../utils/format.js';
 import { URGENCY_VARIANTS } from '../../constants/index.js';
 import { cn } from '../../utils/cn.js';
 
+// /admin/* — admin console shell. It derives the active section from the URL
+// and swaps in Overview / Users / Providers / Requests sub-views (each in this
+// file); CRUD runs through adminApi and re-runs the loader after mutations.
 const TABS = [
   { to: '/admin', label: 'Overview', icon: 'dashboard', end: true },
   { to: '/admin/users', label: 'Users', icon: 'users' },
@@ -23,6 +26,7 @@ const TABS = [
 
 export default function AdminDashboard() {
   const { pathname } = useLocation();
+  // Turn /admin/users into "/users" so the section tabs can match on prefixes.
   const active = pathname.replace('/admin', '') || '/';
 
   return (
@@ -32,9 +36,7 @@ export default function AdminDashboard() {
           <Icon name="shield" size={22} aria-hidden="true" />
         </span>
         <div>
-          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
-            Admin console
-          </h1>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">Admin console</h1>
           <p className="text-sm text-muted">Manage customers, providers and requests across the platform.</p>
         </div>
       </header>
@@ -80,12 +82,18 @@ const CARD_TONES = {
   danger: 'bg-danger-soft text-danger-text'
 };
 
+// Grid of the big-number stat tiles used by Overview.
 function StatCards({ cards }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       {cards.map((c) => (
         <div key={c.label} className="card-surface flex items-center gap-3 p-4">
-          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', CARD_TONES[c.tone])}>
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              CARD_TONES[c.tone]
+            )}
+          >
             <Icon name={c.icon} size={20} aria-hidden="true" />
           </span>
           <div className="min-w-0">
@@ -110,7 +118,9 @@ function TableSkeleton() {
   );
 }
 
+// Sub-views mounted by AdminDashboard based on the URL segment.
 function Overview() {
+  // Platform-wide counters from /admin/stats.
   const { data, loading } = useAsync(() => adminApi.stats(), []);
   if (loading || !data)
     return (
@@ -134,6 +144,7 @@ function Overview() {
   return <StatCards cards={cards} />;
 }
 
+// Compact icon-only row action button (edit / delete / activate rows).
 function IconAction({ label, onClick, tone = 'neutral', icon }) {
   return (
     <button
@@ -155,6 +166,7 @@ function IconAction({ label, onClick, tone = 'neutral', icon }) {
   );
 }
 
+// All users with edit (name/email/phone/role) and delete actions.
 function Users() {
   const { data, loading, run } = useAsync(() => adminApi.users(), []);
   const [edit, setEdit] = useState(null);
@@ -204,12 +216,24 @@ function Users() {
         <table className="w-full min-w-[40rem] text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-wider text-muted">
             <tr>
-              <th scope="col" className="px-5 py-3">User</th>
-              <th scope="col" className="px-5 py-3">Phone</th>
-              <th scope="col" className="px-5 py-3">Email</th>
-              <th scope="col" className="px-5 py-3">Role</th>
-              <th scope="col" className="px-5 py-3">Business</th>
-              <th scope="col" className="px-5 py-3 text-right">Actions</th>
+              <th scope="col" className="px-5 py-3">
+                User
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Phone
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Email
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Role
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Business
+              </th>
+              <th scope="col" className="px-5 py-3 text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -225,7 +249,12 @@ function Users() {
                 <td className="px-5 py-3">
                   <div className="flex justify-end gap-1.5">
                     <IconAction label="Edit user" icon="edit" tone="brand" onClick={() => openEdit(u)} />
-                    <IconAction label="Delete user" icon="trash" tone="danger" onClick={() => setDeleteTarget(u)} />
+                    <IconAction
+                      label="Delete user"
+                      icon="trash"
+                      tone="danger"
+                      onClick={() => setDeleteTarget(u)}
+                    />
                   </div>
                 </td>
               </tr>
@@ -240,23 +269,40 @@ function Users() {
         title="Edit user"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setEdit(null)}>Cancel</Button>
-            <Button onClick={save} loading={saving} icon="check">Save</Button>
+            <Button variant="secondary" onClick={() => setEdit(null)}>
+              Cancel
+            </Button>
+            <Button onClick={save} loading={saving} icon="check">
+              Save
+            </Button>
           </>
         }
       >
         <div className="space-y-3">
           <div>
             <Label htmlFor="au-name">Name</Label>
-            <Input id="au-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input
+              id="au-name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
           </div>
           <div>
             <Label htmlFor="au-phone">Phone</Label>
-            <Input id="au-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Input
+              id="au-phone"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
           </div>
           <div>
             <Label htmlFor="au-email">Email</Label>
-            <Input id="au-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input
+              id="au-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </div>
           <div>
             <Label htmlFor="au-role">Role</Label>
@@ -279,7 +325,9 @@ function Users() {
         title="Delete user?"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
             <Button variant="danger" loading={deleting} icon="trash" onClick={remove}>
               Delete user
             </Button>
@@ -300,6 +348,7 @@ function Users() {
   );
 }
 
+// Provider rows with activate/deactivate toggle and editable business profile.
 function Providers() {
   const { data, loading, run } = useAsync(() => adminApi.providers(), []);
   const [edit, setEdit] = useState(null);
@@ -351,12 +400,24 @@ function Providers() {
         <table className="w-full min-w-[40rem] text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-wider text-muted">
             <tr>
-              <th scope="col" className="px-5 py-3">Business</th>
-              <th scope="col" className="px-5 py-3">Services</th>
-              <th scope="col" className="px-5 py-3">Rating</th>
-              <th scope="col" className="px-5 py-3">Load</th>
-              <th scope="col" className="px-5 py-3">Status</th>
-              <th scope="col" className="px-5 py-3 text-right">Actions</th>
+              <th scope="col" className="px-5 py-3">
+                Business
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Services
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Rating
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Load
+              </th>
+              <th scope="col" className="px-5 py-3">
+                Status
+              </th>
+              <th scope="col" className="px-5 py-3 text-right">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -370,7 +431,12 @@ function Providers() {
                   </td>
                   <td className="px-5 py-3">
                     <span className="inline-flex items-center gap-1 font-medium text-fg">
-                      <Icon name="star" size={13} className="fill-amber-400 text-amber-400" aria-hidden="true" />
+                      <Icon
+                        name="star"
+                        size={13}
+                        className="fill-amber-400 text-amber-400"
+                        aria-hidden="true"
+                      />
                       {Number(p.rating || 0).toFixed(1)}
                     </span>
                   </td>
@@ -382,7 +448,12 @@ function Providers() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex justify-end gap-1.5">
-                      <IconAction label="Edit provider" icon="edit" tone="brand" onClick={() => openEdit(p)} />
+                      <IconAction
+                        label="Edit provider"
+                        icon="edit"
+                        tone="brand"
+                        onClick={() => openEdit(p)}
+                      />
                       <Button
                         size="sm"
                         variant={inactive ? 'primary' : 'secondary'}
@@ -406,19 +477,35 @@ function Providers() {
         title="Edit provider"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setEdit(null)}>Cancel</Button>
-            <Button onClick={save} loading={saving} icon="check">Save</Button>
+            <Button variant="secondary" onClick={() => setEdit(null)}>
+              Cancel
+            </Button>
+            <Button onClick={save} loading={saving} icon="check">
+              Save
+            </Button>
           </>
         }
       >
         <div className="space-y-3">
           <div>
             <Label htmlFor="ap-name">Business name</Label>
-            <Input id="ap-name" value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} />
+            <Input
+              id="ap-name"
+              value={form.businessName}
+              onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+            />
           </div>
           <div>
             <Label htmlFor="ap-rating">Rating (0–5)</Label>
-            <Input id="ap-rating" type="number" min="0" max="5" step="0.1" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+            <Input
+              id="ap-rating"
+              type="number"
+              min="0"
+              max="5"
+              step="0.1"
+              value={form.rating}
+              onChange={(e) => setForm({ ...form, rating: e.target.value })}
+            />
           </div>
           <div className="flex items-center justify-between rounded-xl border border-line px-4 py-3">
             <div>
@@ -431,9 +518,17 @@ function Providers() {
               aria-checked={form.isActive}
               aria-label="Provider active"
               onClick={() => setForm({ ...form, isActive: !form.isActive })}
-              className={cn('relative h-6 w-11 shrink-0 rounded-full transition-colors', form.isActive ? 'bg-brand' : 'bg-line2')}
+              className={cn(
+                'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+                form.isActive ? 'bg-brand' : 'bg-line2'
+              )}
             >
-              <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', form.isActive ? 'left-[1.375rem]' : 'left-0.5')} />
+              <span
+                className={cn(
+                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all',
+                  form.isActive ? 'left-[1.375rem]' : 'left-0.5'
+                )}
+              />
             </button>
           </div>
         </div>
@@ -442,20 +537,28 @@ function Providers() {
   );
 }
 
+// Read-only feed of every request across the platform.
 function Requests() {
   const { data, loading } = useAsync(() => adminApi.requests(), []);
   if (loading) return <TableSkeleton />;
   if (!data || data.length === 0)
     return (
       <div className="card-surface">
-        <EmptyState icon="inbox" title="No requests yet" hint="Requests from all customers will appear here." />
+        <EmptyState
+          icon="inbox"
+          title="No requests yet"
+          hint="Requests from all customers will appear here."
+        />
       </div>
     );
 
   return (
     <ul className="space-y-3">
       {data.map((r) => (
-        <li key={r._id} className="card-surface flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between">
+        <li
+          key={r._id}
+          className="card-surface flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between"
+        >
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-heading text-[15px] font-bold text-fg">{r.serviceType}</h3>

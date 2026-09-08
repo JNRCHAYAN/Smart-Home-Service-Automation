@@ -1,5 +1,7 @@
 import Icon from './Icon.jsx';
 
+// Centred empty/placeholder panel. Props: icon (registry name), title, optional
+// hint copy and an optional action node (e.g. a Button/Link).
 export default function EmptyState({ icon = 'inbox', title, hint, action, className = '' }) {
   return (
     <div className={`flex flex-col items-center justify-center px-4 py-14 text-center ${className}`}>

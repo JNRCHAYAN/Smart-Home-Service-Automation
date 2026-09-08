@@ -1,5 +1,8 @@
 import { STATUS_FLOW, STATUS_VARIANTS } from '../constants/index.js';
 
+// Presentation helpers for dates, relative time, currency, distance and
+// status→Badge-variant mapping (used across pages and cards).
+
 export function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -43,6 +46,8 @@ export function statusStep(status) {
   return idx === -1 ? -1 : idx;
 }
 
+// Maps a request status to the Badge variant name that should render it
+// (see components/common/Badge.jsx); unknown states fall back to neutral.
 export function statusClass(status) {
   return STATUS_VARIANTS[status] || 'neutral';
 }

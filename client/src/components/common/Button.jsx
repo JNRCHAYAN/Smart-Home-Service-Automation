@@ -1,6 +1,8 @@
 import Icon from './Icon.jsx';
 import { cn } from '../../utils/cn.js';
 
+// Shared button primitive. Variants/sizes are static class maps; buttonClass()
+// is also exported so plain <Link> elements can be styled as buttons.
 const VARIANTS = {
   primary: 'bg-brand text-white hover:bg-brand-hover shadow-soft',
   secondary: 'border border-line2 bg-surface text-fg hover:bg-inset',
@@ -39,6 +41,7 @@ export default function Button({
 }) {
   return (
     <button type={type} className={buttonClass({ variant, size, full, className })} {...props}>
+      {/* While loading, show a spinner in place of the leading icon */}
       {loading ? (
         <Icon name="loader" className="animate-spin" size={18} aria-hidden="true" />
       ) : (

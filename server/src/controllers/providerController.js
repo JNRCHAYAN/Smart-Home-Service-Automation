@@ -7,7 +7,11 @@ import {
 import { ok, notFound, unauthorized, badRequest } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
+// Provider-facing reads/updates: dashboard, schedule and availability. The same
+// handlers serve both the current user's provider and an explicit provider id.
 async function resolveProvider(req) {
+  // Support both /api/providers/dashboard (current user, no id) and the
+  // plan-aligned /api/providers/:id/dashboard forms.
   if (req.params.id) return req.params.id;
   if (!req.currentUser) return null;
   const p = await providerByUserId(req.currentUser._id);

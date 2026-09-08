@@ -1,11 +1,11 @@
-import { 
-  createRequest, 
-  requestById, 
-  requestsByCustomer, 
-  saveCandidateMatches, 
-  confirmMatch, 
-  setStatus, 
-  cancelRequest, 
+import {
+  createRequest,
+  requestById,
+  requestsByCustomer,
+  saveCandidateMatches,
+  confirmMatch,
+  setStatus,
+  cancelRequest,
   addFeedback,
   providerDashboard,
   providerSchedule,
@@ -17,16 +17,24 @@ import { STATUS, URGENCY_LEVELS, SERVICE_CATEGORIES, AREAS } from '../constants/
 import { chromaRag } from './chromaRag.js';
 import { rankProviders } from './matchingEngine.js';
 
+// Tool/function layer for the AI assistant: CHAT_FUNCTIONS is the OpenAI-style
+// schema advertised to the model, and executeFunction routes each requested call
+// to a repo-backed handler, with role checks inside provider/customer actions.
 export const CHAT_FUNCTIONS = [
   {
     type: 'function',
     function: {
       name: 'search_services',
-      description: 'Search for available service types and categories. Use when user asks what services are offered or wants to browse categories.',
+      description:
+        'Search for available service types and categories. Use when user asks what services are offered or wants to browse categories.',
       parameters: {
         type: 'object',
         properties: {
-          category: { type: 'string', description: 'Optional category key (appliance, plumbing, electrical, cleaning, maintenance, moving, car, personal)' },
+          category: {
+            type: 'string',
+            description:
+              'Optional category key (appliance, plumbing, electrical, cleaning, maintenance, moving, car, personal)'
+          },
           query: { type: 'string', description: 'User search query in English or Bangla' }
         },
         required: []
@@ -37,11 +45,15 @@ export const CHAT_FUNCTIONS = [
     type: 'function',
     function: {
       name: 'create_service_request',
-      description: 'Create a new service request for a customer. Use when user wants to book a service. Requires: serviceType, location (area), preferredDate, preferredTimeWindow (start, end), urgency, problemDetails, contact (name, phone).',
+      description:
+        'Create a new service request for a customer. Use when user wants to book a service. Requires: serviceType, location (area), preferredDate, preferredTimeWindow (start, end), urgency, problemDetails, contact (name, phone).',
       parameters: {
         type: 'object',
         properties: {
-          serviceType: { type: 'string', description: 'Exact service type from categories (e.g., "AC Repair", "Leak Fix")' },
+          serviceType: {
+            type: 'string',
+            description: 'Exact service type from categories (e.g., "AC Repair", "Leak Fix")'
+          },
           category: { type: 'string', description: 'Category key (appliance, plumbing, etc.)' },
           location: {
             type: 'object',
@@ -66,7 +78,16 @@ export const CHAT_FUNCTIONS = [
             required: ['name', 'phone']
           }
         },
-        required: ['serviceType', 'category', 'location', 'preferredDate', 'preferredTimeWindow', 'urgency', 'problemDetails', 'contact']
+        required: [
+          'serviceType',
+          'category',
+          'location',
+          'preferredDate',
+          'preferredTimeWindow',
+          'urgency',
+          'problemDetails',
+          'contact'
+        ]
       }
     }
   },
@@ -74,7 +95,8 @@ export const CHAT_FUNCTIONS = [
     type: 'function',
     function: {
       name: 'get_provider_matches',
-      description: 'Get ranked provider matches for a request ID. Returns top 3 providers with score breakdown.',
+      description:
+        'Get ranked provider matches for a request ID. Returns top 3 providers with score breakdown.',
       parameters: {
         type: 'object',
         properties: {
@@ -210,7 +232,8 @@ export const CHAT_FUNCTIONS = [
     type: 'function',
     function: {
       name: 'search_knowledge_base',
-      description: 'Search the knowledge base for FAQs, policies, pricing, how matching works, etc. Use for informational questions.',
+      description:
+        'Search the knowledge base for FAQs, policies, pricing, how matching works, etc. Use for informational questions.',
       parameters: {
         type: 'object',
         properties: {
@@ -251,6 +274,7 @@ export const CHAT_FUNCTIONS = [
 
 export async function executeFunction(name, args, userContext) {
   try {
+    // Dispatch by tool name; keep in sync with the CHAT_FUNCTIONS schema above.
     switch (name) {
       case 'search_services':
         return await handleSearchServices(args);
@@ -292,17 +316,19 @@ export async function executeFunction(name, args, userContext) {
 async function handleSearchServices({ category, query }) {
   let services = SERVICE_CATEGORIES;
   if (category) {
-    services = services.filter(c => c.key === category);
+    services = services.filter((c) => c.key === category);
   }
-  
+
   if (query) {
     const q = query.toLowerCase();
-    services = services.map(cat => ({
-      ...cat,
-      services: cat.services.filter(s => s.toLowerCase().includes(q))
-    })).filter(cat => cat.services.length > 0);
+    services = services
+      .map((cat) => ({
+        ...cat,
+        services: cat.services.filter((s) => s.toLowerCase().includes(q))
+      }))
+      .filter((cat) => cat.services.length > 0);
   }
-  
+
   return { services, areas: Object.keys(AREAS) };
 }
 
@@ -310,23 +336,23 @@ async function handleCreateRequest(args, userContext) {
   if (!userContext?.userId) {
     return { error: 'User not authenticated' };
   }
-  
+
   const payload = {
     customerId: userContext.userId,
     ...args
   };
-  
+
   const request = createRequest(payload);
-  
+
   // Run matching engine to find providers
   const providers = activeProviders();
   const matches = rankProviders({ providers, request, limit: 3 });
   const topMatches = matches.slice(0, 3);
-  
+
   saveCandidateMatches(request._id, topMatches);
-  
-  return { 
-    requestId: request._id, 
+
+  return {
+    requestId: request._id,
     message: 'Request created successfully. Finding best providers...',
     request,
     matches: topMatches
@@ -336,7 +362,7 @@ async function handleCreateRequest(args, userContext) {
 async function handleGetMatches({ requestId }) {
   const request = requestById(requestId);
   if (!request) return { error: 'Request not found' };
-  
+
   const matches = request.candidateMatches || [];
   return { matches };
 }
@@ -344,8 +370,8 @@ async function handleGetMatches({ requestId }) {
 async function handleConfirmMatch({ requestId, providerId }) {
   try {
     const result = confirmMatch(requestId, providerId);
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Provider confirmed! Slot locked.',
       request: result
     };
@@ -378,10 +404,10 @@ async function handleProviderDashboard(userContext) {
   if (!userContext?.userId || userContext.role !== 'provider') {
     return { error: 'Provider access required' };
   }
-  
+
   const provider = providerByUserId(userContext.userId);
   if (!provider) return { error: 'Provider profile not found' };
-  
+
   const dashboard = providerDashboard(provider._id);
   return { dashboard };
 }
@@ -390,10 +416,10 @@ async function handleUpdateStatus({ requestId, status }, userContext) {
   if (!userContext?.userId || userContext.role !== 'provider') {
     return { error: 'Provider access required' };
   }
-  
+
   const provider = providerByUserId(userContext.userId);
   if (!provider) return { error: 'Provider profile not found' };
-  
+
   try {
     const result = setStatus(requestId, status, provider._id);
     return { success: true, message: `Job ${status.toLowerCase()}`, request: result };
@@ -406,10 +432,10 @@ async function handleProviderSchedule(userContext) {
   if (!userContext?.userId || userContext.role !== 'provider') {
     return { error: 'Provider access required' };
   }
-  
+
   const provider = providerByUserId(userContext.userId);
   if (!provider) return { error: 'Provider profile not found' };
-  
+
   const schedule = providerSchedule(provider._id);
   return { schedule };
 }
@@ -418,20 +444,20 @@ async function handleUpdateAvailability({ availability }, userContext) {
   if (!userContext?.userId || userContext.role !== 'provider') {
     return { error: 'Provider access required' };
   }
-  
+
   const provider = providerByUserId(userContext.userId);
   if (!provider) return { error: 'Provider profile not found' };
-  
+
   const result = setProviderAvailability(provider._id, availability);
   return { success: true, message: 'Availability updated', availability: result };
 }
 
 async function handleKnowledgeSearch({ query, nResults = 5 }) {
   const results = await chromaRag.hybridSearch(query, nResults);
-  
+
   const documents = results.documents?.[0] || [];
   const metadatas = results.metadatas?.[0] || [];
-  
+
   return {
     results: documents.map((doc, i) => ({
       content: doc,
@@ -443,11 +469,11 @@ async function handleKnowledgeSearch({ query, nResults = 5 }) {
 async function handlePriceEstimate({ serviceType, area }) {
   const results = await chromaRag.hybridSearch(`price ${serviceType} ${area || ''}`, 3);
   const documents = results.documents?.[0] || [];
-  
+
   return {
     serviceType,
     area: area || 'Any',
-    estimates: documents.map(d => d.content).slice(0, 2)
+    estimates: documents.map((d) => d.content).slice(0, 2)
   };
 }
 
@@ -455,7 +481,7 @@ async function handleUserRequests(userContext) {
   if (!userContext?.userId || userContext.role !== 'customer') {
     return { error: 'Customer access required' };
   }
-  
+
   const requests = requestsByCustomer(userContext.userId);
   return { requests };
 }

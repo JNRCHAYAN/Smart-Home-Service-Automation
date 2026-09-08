@@ -7,6 +7,8 @@ import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { formatDate, statusClass } from '../../utils/format.js';
 import { URGENCY_VARIANTS } from '../../constants/index.js';
 
+// /provider/schedule — read-only view of upcoming accepted jobs plus the
+// provider's free (unbooked) availability slots for the coming days.
 export default function ProviderSchedule() {
   const { data, loading } = useAsync(() => providerApi.schedule(), []);
 

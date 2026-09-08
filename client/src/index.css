@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Theming model
+  - Components never hard-code hex: every colour is a semantic CSS custom
+    property exposed to Tailwind by tailwind.config.js (e.g. bg-brand,
+    text-muted, border-line). Tokens are documented in
+    design-system/servio/MASTER.md.
+  - Each status (success/warning/danger/info) ships a 4-part family:
+    solid + solid "-soft" fill + a darker "-text" accent meant to sit on the
+    soft fill + a soft "-border". Pairs are tuned so text keeps contrast on
+    its matching soft surface in both themes.
+  - "Solid" action colours (--brand, --danger-action, …) are intentionally
+    near-identical in light and dark so white content on them keeps its
+    contrast; only the accent text roles (--brand-text and friends) swap hue
+    per theme, because they have to be readable over light surfaces in light
+    mode and dark surfaces in dark mode.
+*/
+
 /* ============================================================
    Design tokens — see design-system/servio/MASTER.md
    ============================================================ */
@@ -52,6 +69,8 @@
 
 .dark {
   color-scheme: dark;
+  /* Overrides the same semantic roles for dark mode (class toggled on <html>
+     by the theme store). See theming model notes above :root. */
 
   --canvas: #0a0f1a;
   --surface: #101827;
@@ -155,12 +174,16 @@
     @apply rounded-2xl border border-line bg-surface shadow-soft;
   }
 
+  /* The shimmer effect is a flat inset block plus an animated sweep overlay. */
   /* Skeleton shimmer base */
   .skeleton {
     position: relative;
     overflow: hidden;
     @apply rounded-lg bg-inset;
   }
+  /* The ::after layer is a soft highlight band that starts off-screen left and
+     is translated across the block by the `shimmer` keyframes (defined in
+     tailwind.config.js); --skeleton-shine lets callers tint the band. */
   .skeleton::after {
     content: '';
     position: absolute;
@@ -198,6 +221,7 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Also stop the shimmer loop outright so skeleton blocks sit static. */
   .skeleton::after {
     animation: none;
   }

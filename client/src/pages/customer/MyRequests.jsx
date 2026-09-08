@@ -9,6 +9,9 @@ import { buttonClass } from '../../components/common/Button.jsx';
 import { statusClass, formatDate } from '../../utils/format.js';
 import { URGENCY_VARIANTS } from '../../constants/index.js';
 
+// /my-requests — list of the signed-in customer's requests as tappable rows
+// that deep-link into /request/:id/track. Includes status/urgency badges and
+// an empty state that funnels to the booking wizard.
 export default function MyRequests() {
   const { data: requests, loading } = useAsync(() => requestApi.list(), []);
 
@@ -38,7 +41,7 @@ export default function MyRequests() {
                     <h3 className="truncate font-heading text-[15px] font-bold text-fg group-hover:text-brand-text">
                       {r.serviceType}
                     </h3>
-                    <Badge variant={URGENCY_VARIANTS[r.urgency] || "neutral"}>{r.urgency}</Badge>
+                    <Badge variant={URGENCY_VARIANTS[r.urgency] || 'neutral'}>{r.urgency}</Badge>
                   </div>
                   <p className="mt-1 truncate text-sm text-muted">
                     {formatDate(r.preferredDate)} · {r.preferredTimeWindow.start}–{r.preferredTimeWindow.end}
@@ -64,12 +67,12 @@ export default function MyRequests() {
             icon="inbox"
             title="No requests yet"
             hint="Book your first home service and track it here."
-              action={
-                <Link to="/new-request" className={buttonClass()}>
-                  <Icon name="plus" size={16} aria-hidden="true" />
-                  New request
-                </Link>
-              }
+            action={
+              <Link to="/new-request" className={buttonClass()}>
+                <Icon name="plus" size={16} aria-hidden="true" />
+                New request
+              </Link>
+            }
           />
         </div>
       )}

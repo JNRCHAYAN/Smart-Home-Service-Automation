@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Account documents (customers, providers, admins). phone is the unique login
+// key and password stores a bcrypt hash (see repo.createUser). The model is
+// reused across reloads instead of recompiled via mongoose.models lookup.
 const typeMap = { usePushEach: true };
 
 const locationSchema = new mongoose.Schema(

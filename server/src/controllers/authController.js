@@ -12,7 +12,12 @@ import {
 import { ok, created, badRequest, unauthorized } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
+// Auth handlers: register enforces phone/email uniqueness before creating the
+// user, login verifies the bcrypt hash, and both issue a 2-day JWT carrying the
+// user id and role; /me echoes the token's user.
 function tokenFor(user) {
+  // Payload = user id (sub) plus role, so downstream code knows the actor; the
+  // auth middleware later resolves sub to the full user document.
   return jwt.sign({ sub: user._id, role: user.role }, env.jwtSecret, { expiresIn: '2d' });
 }
 
@@ -44,6 +49,8 @@ export const register = asyncHandler(async (req, res) => {
   if (!parsed.success) return badRequest(res, parsed.error.issues[0].message);
   const data = parsed.data;
 
+  // Phone and email both act as unique identity keys, so a duplicate is rejected
+  // here (rather than upserted) before the user record is created.
   if (await findUserByPhone(data.phone)) return badRequest(res, 'This phone number is already registered');
   if (data.email && (await findUserByEmail(data.email)))
     return badRequest(res, 'This email is already registered');
@@ -72,6 +79,7 @@ export const login = asyncHandler(async (req, res) => {
   const user = await findUserByPhone(phone);
   if (!user) return unauthorized(res, 'Invalid phone or password');
 
+  // Validate the submitted password against the bcrypt hash stored at register.
   const valid = bcrypt.compareSync(password, user.password);
   if (!valid) return unauthorized(res, 'Invalid phone or password');
 

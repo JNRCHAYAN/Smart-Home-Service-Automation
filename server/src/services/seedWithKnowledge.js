@@ -3,9 +3,12 @@ import { ensureSeed } from '../repo/repo.js';
 import { chromaRag } from './chromaRag.js';
 import { ingestAllKnowledge } from './ingestKnowledge.js';
 
+// Full bootstrap script: connects to MongoDB, seeds demo data, then ingests the
+// knowledge base into ChromaDB. An unavailable ChromaDB only warns and skips
+// ingestion rather than failing the whole seed.
 async function main() {
   console.log('🔄 Starting full seed with knowledge base...');
-  
+
   await connectDb();
   const seeded = ensureSeed();
   console.log('✅ Database seeded');
@@ -13,7 +16,7 @@ async function main() {
   try {
     await chromaRag.ensureCollection();
     console.log('✅ ChromaDB collection ready');
-    
+
     await ingestAllKnowledge();
     console.log('✅ Knowledge base ingested');
   } catch (error) {
@@ -26,7 +29,7 @@ async function main() {
   } else {
     console.log('Data already present — skipping seed.');
   }
-  
+
   console.log('🎉 Full seed complete!');
   process.exit(0);
 }

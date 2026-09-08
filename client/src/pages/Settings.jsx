@@ -12,11 +12,23 @@ import { DHK_AREAS } from '../constants/index.js';
 import { formatDate } from '../utils/format.js';
 import { cn } from '../utils/cn.js';
 
+// /settings — account settings for all roles. Customers get a profile tab;
+// providers additionally get a tab to manage business name, services/pricing
+// and a day × time-window availability grid (see ProviderTab).
 const WINDOWS = [
   { start: '09:00', end: '12:00' },
   { start: '12:00', end: '15:00' },
-  { start: '15:00', end: '18:00' }
+  { start: '15:00', end: '18:00' },
+  { start: '18:00', end: '21:00' }
 ];
+
+// Local YYYY-MM-DD (avoids UTC shifts that mislabel today in Dhaka +06).
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 function nextDays(n = 7) {
   const out = [];
@@ -24,7 +36,7 @@ function nextDays(n = 7) {
   for (let i = 0; i < n; i++) {
     const c = new Date(d);
     c.setDate(d.getDate() + i);
-    out.push(c.toISOString().slice(0, 10));
+    out.push(localDateStr(c));
   }
   return out;
 }
@@ -41,9 +53,7 @@ export default function Settings() {
           <Icon name="user" size={22} aria-hidden="true" />
         </span>
         <div>
-          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
-            Profile & settings
-          </h1>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">Profile & settings</h1>
           <p className="text-sm text-muted">Manage your account and service preferences.</p>
         </div>
       </header>
@@ -71,7 +81,7 @@ export default function Settings() {
 }
 
 function ProfileTab() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { data, run } = useAsync(() => authApi.me(), []);
   const me = data?.user || user;
   const [form, setForm] = useState({ name: '', email: '', area: 'Dhanmondi' });
@@ -85,13 +95,15 @@ function ProfileTab() {
     setSaving(true);
     const area = DHK_AREAS.find((a) => a.label === form.area);
     try {
-      await profileApi.updateProfile({
+      const updated = await profileApi.updateProfile({
         name: form.name,
         email: form.email,
         address: `${form.area}, Dhaka`,
         lat: area?.lat,
         lng: area?.lng
       });
+      // Keep the header/user menu in sync with what was just saved.
+      setUser({ name: updated.name, email: updated.email });
       toast.success('Profile updated');
       await run();
     } catch (err) {
@@ -106,7 +118,11 @@ function ProfileTab() {
       <div className="space-y-4">
         <div>
           <Label htmlFor="pf-name">Full name</Label>
-          <Input id="pf-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input
+            id="pf-name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
         </div>
         <div>
           <Label htmlFor="pf-email" hint="Optional">
@@ -196,6 +212,8 @@ function ProviderTab() {
   };
 
   const toggleSlot = (date, win) => {
+    // Flip one availability cell on/off. Cells are matched on the date + time
+    // window; booked slots are locked and cannot be removed from the grid.
     const exists = form.availability.find(
       (s) => s.date === date && s.startTime === win.start && s.endTime === win.end
     );
@@ -254,7 +272,11 @@ function ProviderTab() {
               <div className="text-sm font-semibold text-fg">Accepting new jobs</div>
               <div className="text-xs text-muted">Turn off to stop receiving matches</div>
             </div>
-            <Toggle checked={form.isActive} onChange={(v) => setForm({ ...form, isActive: v })} label="Accepting new jobs" />
+            <Toggle
+              checked={form.isActive}
+              onChange={(v) => setForm({ ...form, isActive: v })}
+              label="Accepting new jobs"
+            />
           </div>
         </div>
       </Card>
@@ -281,7 +303,12 @@ function ProviderTab() {
                   type="number"
                   aria-label={`Price for ${svc}`}
                   value={form.pricePerService[svc] || ''}
-                  onChange={(e) => setForm({ ...form, pricePerService: { ...form.pricePerService, [svc]: Number(e.target.value) || 0 } })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      pricePerService: { ...form.pricePerService, [svc]: Number(e.target.value) || 0 }
+                    })
+                  }
                   className="w-20 py-1.5 text-right"
                 />
               </span>
@@ -330,8 +357,14 @@ function ProviderTab() {
           </span>
           Work schedule
         </h2>
+        <p className="mt-1.5 text-sm text-muted">
+          These are the exact date and time blocks when you accept jobs. Customers can only be matched
+          and booked into a block you switch <strong className="font-semibold text-fg">ON</strong> for
+          that day.
+        </p>
         <p className="mb-4 mt-1.5 text-sm text-muted">
-          Select slots over the next 7 days. Booked slots are locked.
+          Tap an empty cell to open it, tap a blue cell to close it. Booked cells are locked and can’t be
+          removed. Changes apply to new matches immediately — confirmed jobs are never affected.
         </p>
 
         <div className="overflow-x-auto rounded-xl border border-line">
@@ -395,6 +428,27 @@ function ProviderTab() {
             </tbody>
           </table>
         </div>
+
+        {/* Cell legend — meaning never relies on colour alone. */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand text-white">
+              <Icon name="check" size={12} aria-hidden="true" />
+            </span>
+            Open — customers can book
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-5 w-5 rounded-md border border-line2" aria-hidden="true" />
+            Closed — click to open
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md border border-line bg-inset text-faint">
+              <Icon name="ban" size={12} aria-hidden="true" />
+            </span>
+            Booked / locked
+          </span>
+        </div>
+
         <div className="mt-5 flex justify-end">
           <Button onClick={save} loading={saving} icon="check">
             Save settings

@@ -2,6 +2,8 @@ import { connectDb } from '../config/db.js';
 import { ensureSeed } from '../repo/repo.js';
 import { activeProviderDocs } from '../repo/repo.js';
 
+// Standalone seed script: connects to MongoDB and, when the database is empty,
+// creates the demo accounts and the provider catalogue, then prints credentials.
 async function main() {
   await connectDb();
   const seeded = await ensureSeed();

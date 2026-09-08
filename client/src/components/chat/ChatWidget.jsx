@@ -8,6 +8,9 @@ import Button from '../common/Button.jsx';
 import { cn } from '../../utils/cn.js';
 import { formatTime } from '../../utils/format.js';
 
+// Floating "Servio AI" assistant, mounted by AppLayout once a user is signed
+// in. Owns the input state + quick actions; conversation history, open/minimise
+// flags and streaming live in useChatStore so they survive route changes.
 export default function ChatWidget() {
   const { user, token } = useAuth();
   const {
@@ -46,6 +49,7 @@ export default function ChatWidget() {
   const handleSend = async (e) => {
     e?.preventDefault();
     const text = input.trim();
+    // Block re-entry while a reply is streaming or no conversation exists yet.
     if (!text || streaming || !currentConversationId) return;
 
     setInput('');
@@ -56,6 +60,8 @@ export default function ChatWidget() {
       setStreaming(true);
       await sendMessageStream(currentConversationId, text);
     } catch (error) {
+      // On stream failure, patch the placeholder reply with a fallback message
+      // instead of leaving a silently empty assistant bubble.
       console.error('Chat error:', error);
       updateLastMessage(currentConversationId, 'Sorry, something went wrong. Please try again.');
       toast.error('Failed to send message');
@@ -66,9 +72,13 @@ export default function ChatWidget() {
 
   const sendMessageStream = async (conversationId, userMessage) => {
     const conv = conversations[conversationId];
+    // Send only the recent context to the model; the full history stays local.
     const history = (conv?.messages || []).slice(-10).map((m) => ({ role: m.role, content: m.content }));
     const response = await chatApi.stream([...history, { role: 'user', content: userMessage }]);
 
+    // chatApi.stream returns a raw fetch Response; read its body as an SSE
+    // stream of "data: ..." lines. A placeholder assistant bubble is inserted
+    // first, then filled (and appended to) token by token below.
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let isFirstChunk = true;
@@ -82,6 +92,8 @@ export default function ChatWidget() {
       const chunk = decoder.decode(value, { stream: true });
       const lines = chunk.split('\n');
 
+      // SSE frames can split across reads, so decode in streaming mode above
+      // and parse each "data: " line independently.
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6);
@@ -95,6 +107,7 @@ export default function ChatWidget() {
         }
 
         if (parsed.type === 'content') {
+          // First chunk replaces the empty placeholder; later chunks append.
           if (isFirstChunk) {
             updateLastMessage(conversationId, parsed.content);
             isFirstChunk = false;
@@ -196,6 +209,7 @@ export default function ChatWidget() {
               <label htmlFor="servio-chat-input" className="sr-only">
                 Message Servio AI
               </label>
+              {/* Disabled while streaming so typing can't race the SSE reader */}
               <input
                 id="servio-chat-input"
                 type="text"
@@ -259,12 +273,7 @@ function MessageBubble({ message }) {
         )}
       >
         <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
-        <div
-          className={cn(
-            'mt-1 text-right text-[10px]',
-            isUser ? 'text-white/70' : 'text-faint'
-          )}
-        >
+        <div className={cn('mt-1 text-right text-[10px]', isUser ? 'text-white/70' : 'text-faint')}>
           {formatTime(message.timestamp)}
         </div>
       </div>

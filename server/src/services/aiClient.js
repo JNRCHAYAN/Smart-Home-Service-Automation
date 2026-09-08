@@ -1,5 +1,8 @@
 import env from '../config/env.js';
 
+// Thin OpenAI-compatible client with a dual-provider split: DeepSeek serves
+// chat completions, while Gemini serves embeddings (DeepSeek has no embeddings
+// endpoint). Missing API keys fail loudly at call time via the _require* guards.
 const DEEPSEEK_BASE = 'https://api.deepseek.com';
 
 // DeepSeek has no embeddings endpoint, so RAG embeddings fall back to
@@ -17,20 +20,24 @@ class AIClient {
 
   _authHeaders() {
     return {
-      'Authorization': `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json'
     };
   }
 
   _requireChatKey() {
     if (!this.apiKey) {
-      throw new Error('DEEPSEEK_API_KEY not configured. Get a key from https://platform.deepseek.com/api_keys');
+      throw new Error(
+        'DEEPSEEK_API_KEY not configured. Get a key from https://platform.deepseek.com/api_keys'
+      );
     }
   }
 
   _requireEmbeddingKey() {
     if (!this.embeddingApiKey) {
-      throw new Error('GEMINI_API_KEY not configured for embeddings (DeepSeek has no embeddings API). Get a key from https://aistudio.google.com/app/apikey');
+      throw new Error(
+        'GEMINI_API_KEY not configured for embeddings (DeepSeek has no embeddings API). Get a key from https://aistudio.google.com/app/apikey'
+      );
     }
   }
 
@@ -90,7 +97,7 @@ class AIClient {
     const response = await fetch(`${GEMINI_OPENAI_BASE}/embeddings`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.embeddingApiKey}`,
+        Authorization: `Bearer ${this.embeddingApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

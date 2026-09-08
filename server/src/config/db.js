@@ -15,6 +15,8 @@ export async function connectDb() {
         '(MONGODB_URI=mongodb+srv://...) and restart the server.'
     );
   }
+  // Fail fast (5s selection timeout) when MongoDB is unreachable so the real
+  // startup cause surfaces immediately instead of hanging.
   await mongoose.connect(env.mongoUri, { serverSelectionTimeoutMS: 5000 });
   console.log('[db] connected to MongoDB');
 }

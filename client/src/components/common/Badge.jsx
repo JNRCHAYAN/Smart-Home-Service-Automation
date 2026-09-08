@@ -1,5 +1,8 @@
 import { cn } from '../../utils/cn.js';
 
+// Small pill label. The variant prop names here are exactly the strings that
+// utils/format.js `statusClass()` (and constants like URGENCY_VARIANTS) return,
+// so callers can map a status straight onto a Badge variant.
 const VARIANTS = {
   neutral: 'bg-inset text-muted ring-line',
   brand: 'bg-brand-soft text-brand-text ring-brand-border',
@@ -9,13 +12,7 @@ const VARIANTS = {
   info: 'bg-info-soft text-info-text ring-info-border'
 };
 
-export default function Badge({
-  children,
-  variant = 'neutral',
-  icon,
-  className = '',
-  ...props
-}) {
+export default function Badge({ children, variant = 'neutral', icon, className = '', ...props }) {
   return (
     <span
       className={cn(

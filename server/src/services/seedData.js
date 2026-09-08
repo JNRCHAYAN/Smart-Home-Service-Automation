@@ -1,26 +1,39 @@
 import { AREAS } from '../constants/index.js';
 
-/** Return an ISO date string (YYYY-MM-DD) offset by `offset` days. */
+// Demo provider catalogue shared by the seeding scripts and knowledge ingestion.
+// buildProviders returns realistic providers across every service category with
+// ratings, per-service pricing, and availability windows for the matching engine.
+/** Local YYYY-MM-DD for a date (avoids UTC shifts that mislabel "today"). */
+function localDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Return a local ISO date string (YYYY-MM-DD) offset by `offset` days. */
 export function dateOffset(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
-  return d.toISOString().slice(0, 10);
+  return localDate(d);
 }
 
 /**
- * Build a default availability array covering the next 7 days with a couple of
- * windows. Some slots are pre-booked to exercise the availability logic.
+ * Build a default availability array covering the next 7 days across the four
+ * daily windows a customer can book. Some slots are pre-booked to exercise the
+ * availability logic.
  */
-function defaultAvailability({ fullyBooked = false, windowCount = 3 } = {}) {
+function defaultAvailability({ fullyBooked = false, windowCount = 4 } = {}) {
   const slots = [];
   const windows = [
     ['09:00', '12:00'],
     ['12:00', '15:00'],
-    ['15:00', '18:00']
+    ['15:00', '18:00'],
+    ['18:00', '21:00']
   ];
   for (let day = 0; day < 7; day++) {
     const date = dateOffset(day);
-    for (let w = 0; w < windowCount; w++) {
+    for (let w = 0; w < Math.min(windowCount, windows.length); w++) {
       const [startTime, endTime] = windows[w];
       // Pre-book some slots to demonstrate the availability filter.
       const isBooked = fullyBooked || (day === 1 && w === 1) || (day === 3 && w === 0);

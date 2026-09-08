@@ -4,6 +4,8 @@ import { ok, badRequest, unauthorized, notFound } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { SERVICE_CATEGORIES } from '../constants/index.js';
 
+// Profile management: customers edit their account/location, providers update
+// their service settings, and categoryServices exposes the shared catalogue.
 const profileSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -25,11 +27,21 @@ export const updateProfile = asyncHandler(async (req, res) => {
   return ok(res, user, 'Profile updated');
 });
 
+const availabilitySlotSchema = z.object({
+  date: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
+  isBooked: z.boolean().optional()
+});
+
 const providerSettingsSchema = z.object({
   businessName: z.string().min(2).optional(),
   serviceTypes: z.array(z.string()).optional(),
   pricePerService: z.record(z.number()).optional(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  // The provider's day × window grid from /settings. Must be accepted here or
+  // Zod silently drops it and schedule changes never persist.
+  availability: z.array(availabilitySlotSchema).optional()
 });
 
 export const updateProviderSettings = asyncHandler(async (req, res) => {

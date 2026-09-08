@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAsync } from '../../hooks/useAsync.js';
 import { servicesApi, requestApi, apiError } from '../../api/index.js';
@@ -8,11 +8,23 @@ import Button from '../../components/common/Button.jsx';
 import { Input, Label, Select, Textarea } from '../../components/common/Field.jsx';
 import { useAuth } from '../../store/authStore.js';
 import { toast } from '../../store/toastStore.js';
-import { formatDateInput } from '../../utils/format.js';
+import { formatDateInput, formatTime } from '../../utils/format.js';
 import { cn } from '../../utils/cn.js';
 
+// /new-request — the 4-step booking wizard (Service → Details → Schedule →
+// Confirm). Each step gates "Continue" via canNext; submit builds the request
+// payload and navigates to its match results.
 const STEPS = ['Service', 'Details', 'Schedule', 'Confirm'];
 const today = () => formatDateInput(new Date());
+
+// "HH:MM" → minutes since midnight, used to compare windows against the clock.
+const toMinutes = (time) => {
+  const [h = 0, m = 0] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+// timeWindow is stored as a single string "label|start|end" — rebuild that key.
+const toTimeKey = (w) => `${w.label}|${w.start}|${w.end}`;
 
 export default function NewRequest() {
   const navigate = useNavigate();
@@ -42,6 +54,31 @@ export default function NewRequest() {
   );
   const area = useMemo(() => DHK_AREAS.find((a) => a.label === form.area), [form.area]);
 
+  // Same-day scheduling: once the clock passes a window's end time it can no
+  // longer be booked today, so it is offered (dimmed + disabled) below. The
+  // clock is read per render so disabled windows stay current.
+  const now = new Date();
+  const dateIsToday = form.date === formatDateInput(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const availableToday = TIME_WINDOWS.filter((w) => toMinutes(w.end) > nowMinutes);
+  const windowIsPast = (end) => toMinutes(end) <= nowMinutes;
+
+  // Keep the chosen window valid: when the date is today and the current
+  // selection has already ended (or nothing is picked), fall back to the next
+  // window that still has time — or clear it when the day is fully booked.
+  useEffect(() => {
+    const current = new Date();
+    const onToday = form.date === formatDateInput(current);
+    const minutesNow = current.getHours() * 60 + current.getMinutes();
+    const end = form.timeWindow.split('|')[2];
+    const chosenIsOpen = Boolean(end) && (!onToday || toMinutes(end) > minutesNow);
+    if (chosenIsOpen) return;
+    const pool = onToday ? TIME_WINDOWS.filter((w) => toMinutes(w.end) > minutesNow) : TIME_WINDOWS;
+    const nextKey = pool[0] ? toTimeKey(pool[0]) : '';
+    if (form.timeWindow === nextKey) return;
+    setForm((f) => ({ ...f, timeWindow: nextKey }));
+  }, [form.date, form.timeWindow]);
+
   const onImage = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,11 +97,13 @@ export default function NewRequest() {
       : step === 1
         ? Boolean(form.area)
         : step === 2
-          ? Boolean(form.date)
+          ? Boolean(form.date && form.timeWindow)
           : Boolean(form.contactName && form.contactPhone);
 
   const submit = async () => {
     setSubmitting(true);
+    // timeWindow stores "label|start|end" as a single value; split it apart for
+    // the API payload (label is only for display on the confirm step).
     const [winLabel, start, end] = form.timeWindow.split('|');
     const payload = {
       serviceType: form.serviceType,
@@ -90,9 +129,7 @@ export default function NewRequest() {
   return (
     <div className="container-page page-shell max-w-3xl">
       <header className="mb-6">
-        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
-          New service request
-        </h1>
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">New service request</h1>
         <p className="mt-1 text-sm text-muted">Follow the steps to book a provider instantly.</p>
       </header>
 
@@ -169,7 +206,12 @@ export default function NewRequest() {
                           <Icon name="check" size={16} className="text-brand-text" aria-hidden="true" />
                         )}
                       </span>
-                      <span className={cn('text-xs font-semibold leading-tight', active ? 'text-brand-text' : 'text-fg')}>
+                      <span
+                        className={cn(
+                          'text-xs font-semibold leading-tight',
+                          active ? 'text-brand-text' : 'text-fg'
+                        )}
+                      >
                         {c.label}
                       </span>
                     </button>
@@ -270,22 +312,28 @@ export default function NewRequest() {
               <Input id="req-date" type="date" min={today()} value={form.date} onChange={set('date')} />
             </div>
             <div>
-              <Label>Time window</Label>
+              <Label hint={dateIsToday ? 'Real-time' : undefined}>Time window</Label>
               <div role="group" aria-label="Time window" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {TIME_WINDOWS.map((w) => {
-                  const key = `${w.label}|${w.start}|${w.end}`;
+                  const key = toTimeKey(w);
                   const active = form.timeWindow === key;
+                  // Windows that have already ended today are disabled.
+                  const disabled = dateIsToday && windowIsPast(w.end);
                   return (
                     <button
                       key={key}
                       type="button"
                       aria-pressed={active}
+                      disabled={disabled}
+                      title={disabled ? 'This time window has already passed today' : undefined}
                       onClick={() => setForm({ ...form, timeWindow: key })}
                       className={cn(
                         'rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors',
-                        active
-                          ? 'border-brand bg-brand-soft text-brand-text'
-                          : 'border-line text-muted hover:border-line2 hover:bg-inset'
+                        disabled
+                          ? 'cursor-not-allowed border-line bg-inset text-faint/60 line-through'
+                          : active
+                            ? 'border-brand bg-brand-soft text-brand-text'
+                            : 'border-line text-muted hover:border-line2 hover:bg-inset'
                       )}
                     >
                       {w.label}
@@ -293,6 +341,16 @@ export default function NewRequest() {
                   );
                 })}
               </div>
+              {dateIsToday && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-muted">
+                  <Icon name="clock" size={13} className="mt-0.5 shrink-0 text-faint" aria-hidden="true" />
+                  <span>
+                    {availableToday.length > 0
+                      ? `It is ${formatTime(now)} — ${availableToday.length} of ${TIME_WINDOWS.length} windows still open today; passed windows are disabled.`
+                      : `It is ${formatTime(now)} — no windows are left today. Please pick another date.`}
+                  </span>
+                </p>
+              )}
             </div>
             <div>
               <Label>Urgency</Label>

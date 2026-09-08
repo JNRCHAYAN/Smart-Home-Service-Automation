@@ -8,6 +8,9 @@ import Icon from '../../components/common/Icon.jsx';
 import { Input, Label, FieldError } from '../../components/common/Field.jsx';
 import { cn } from '../../utils/cn.js';
 
+// /register — account creation for customers or providers. Providers pick a
+// role toggle that reveals the businessName field; that key is dropped from the
+// payload unless the role is provider.
 const ROLES = [
   { value: 'customer', label: 'I need services', icon: 'home' },
   { value: 'provider', label: 'I offer services', icon: 'wrench' }
@@ -32,10 +35,8 @@ export default function Register() {
   const validate = () => {
     const next = {};
     if (form.name.trim().length < 2) next.name = 'Please enter your full name';
-    if (!/^01\d{9}$/.test(form.phone.trim()))
-      next.phone = 'Enter an 11-digit number starting with 01';
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email.trim()))
-      next.email = 'Enter a valid email address';
+    if (!/^01\d{9}$/.test(form.phone.trim())) next.phone = 'Enter an 11-digit number starting with 01';
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email.trim())) next.email = 'Enter a valid email address';
     if (form.password.length < 4) next.password = 'Password must be at least 4 characters';
     if (role === 'provider' && form.businessName.trim().length < 2)
       next.businessName = 'Enter your business name';

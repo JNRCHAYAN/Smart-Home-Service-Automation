@@ -2,6 +2,8 @@ import { useToast } from '../../store/toastStore.js';
 import Icon from './Icon.jsx';
 import { cn } from '../../utils/cn.js';
 
+// Renders the live toast queue (see store/toastStore.js) fixed at the bottom
+// of the viewport. One instance is mounted once, in AppLayout.
 const STYLES = {
   success: { wrap: 'border-success-border bg-success-soft text-success-text', icon: 'checkcircle' },
   error: { wrap: 'border-danger-border bg-danger-soft text-danger-text', icon: 'alertcircle' },
@@ -11,6 +13,8 @@ const STYLES = {
 export default function ToastHost() {
   const { toasts, remove } = useToast();
   return (
+    // aria-live="polite" announces non-error toasts; errors switch each item
+    // to role="alert" so screen readers treat them as urgent.
     <div
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4"

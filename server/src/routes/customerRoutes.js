@@ -4,6 +4,8 @@ import { requestsByCustomer } from '../repo/repo.js';
 import { ok, unauthorized } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
+// /api/customers/:id/requests: a user's request history, guarded so an account
+// can only read its own records.
 const router = Router();
 
 // Plan-aligned: GET /api/customers/:id/requests

@@ -1,13 +1,67 @@
 import {
-  AlertCircle, AlertTriangle, ArrowRight, ArrowUpRight, Ban, Bell, Bot, Briefcase,
-  Building2, Calendar, Car, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
-  CircleDollarSign, Clock, CreditCard, Droplet, FileText, Hammer, Home, Inbox, Info,
-  LayoutDashboard, ListChecks, Loader2, LogOut, MapPin, Menu, MessageSquare, Minimize2,
-  Monitor, Moon, Pencil, Phone, Plus, Receipt, RefreshCw, Scissors, Search, Send,
-  Settings2, ShieldCheck, Sparkles, Star, Sun, Trash2, Truck, TrendingUp, User, Users,
-  Wifi, Wrench, X, Zap
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  ArrowUpRight,
+  Ban,
+  Bell,
+  Bot,
+  Briefcase,
+  Building2,
+  Calendar,
+  Car,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Clock,
+  CreditCard,
+  Droplet,
+  FileText,
+  Hammer,
+  Home,
+  Inbox,
+  Info,
+  LayoutDashboard,
+  ListChecks,
+  Loader2,
+  LogOut,
+  MapPin,
+  Menu,
+  MessageSquare,
+  Minimize2,
+  Monitor,
+  Moon,
+  Pencil,
+  Phone,
+  Plus,
+  Printer,
+  Receipt,
+  RefreshCw,
+  Scissors,
+  Search,
+  Send,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Sun,
+  Trash2,
+  Truck,
+  TrendingUp,
+  User,
+  Users,
+  Wifi,
+  Wrench,
+  X,
+  Zap
 } from 'lucide-react';
 
+// Icon registry: maps short semantic names (used across the app) to lucide
+// components. <Icon name="..."/> resolves here and falls back to Wrench when
+// the name is unknown, so a typo never crashes a screen.
 export const ICONS = {
   alert: AlertTriangle,
   alertcircle: AlertCircle,
@@ -46,6 +100,7 @@ export const ICONS = {
   moon: Moon,
   phone: Phone,
   plus: Plus,
+  printer: Printer,
   receipt: Receipt,
   refresh: RefreshCw,
   scissors: Scissors,
@@ -69,6 +124,8 @@ export const ICONS = {
   invoice: Receipt
 };
 
+// Renders an icon by registry name; extra props (size, aria-hidden, …) are
+// forwarded to the underlying lucide component.
 export default function Icon({ name, size = 20, className = '', strokeWidth = 2, ...props }) {
   const Cmp = ICONS[name] || Wrench;
   return <Cmp size={size} className={className} strokeWidth={strokeWidth} {...props} />;

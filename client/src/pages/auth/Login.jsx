@@ -6,6 +6,8 @@ import { toast } from '../../store/toastStore.js';
 import Button from '../../components/common/Button.jsx';
 import { Input, Label, FieldError } from '../../components/common/Field.jsx';
 
+// /login — phone + password form for existing users. Renders one-click demo
+// accounts and redirects by role after a successful login.
 const DEMO = [
   { role: 'Customer', phone: '01700000000', pass: 'pass1234' },
   { role: 'Provider', phone: '01800000001', pass: 'pass1234' },
@@ -23,8 +25,7 @@ export default function Login() {
 
   const validate = () => {
     const next = {};
-    if (!/^01\d{9}$/.test(form.phone.trim()))
-      next.phone = 'Enter an 11-digit number starting with 01';
+    if (!/^01\d{9}$/.test(form.phone.trim())) next.phone = 'Enter an 11-digit number starting with 01';
     if (form.password.length < 4) next.password = 'Password must be at least 4 characters';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -53,11 +54,7 @@ export default function Login() {
           <p className="mt-1.5 text-sm text-muted">Log in to manage your service requests</p>
         </div>
 
-        <form
-          onSubmit={submit}
-          noValidate
-          className="card-surface space-y-4 p-6 shadow-pop sm:p-7"
-        >
+        <form onSubmit={submit} noValidate className="card-surface space-y-4 p-6 shadow-pop sm:p-7">
           <div>
             <Label htmlFor="login-phone" required>
               Phone number
@@ -80,7 +77,6 @@ export default function Login() {
               <Label htmlFor="login-password" required>
                 Password
               </Label>
-              <span className="mb-1.5 text-xs text-faint">Demo hackathon build</span>
             </div>
             <Input
               id="login-password"
@@ -124,7 +120,10 @@ export default function Login() {
 
         <p className="mt-5 text-center text-sm text-muted">
           New here?{' '}
-          <Link to="/register" className="font-semibold text-brand-text hover:text-brand-text hover:underline">
+          <Link
+            to="/register"
+            className="font-semibold text-brand-text hover:text-brand-text hover:underline"
+          >
             Create an account
           </Link>
         </p>

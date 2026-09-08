@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Provider profile documents: one per provider user (userId), holding the
+// offered service types, per-service prices, location, availability slots,
+// rating, and an active flag used to include/exclude providers from matching.
 const availabilitySchema = new mongoose.Schema(
   {
     date: String,

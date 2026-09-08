@@ -9,12 +9,18 @@ import { toast } from '../../store/toastStore.js';
 import { STATUS } from '../../constants/index.js';
 import { cn } from '../../utils/cn.js';
 
+// /provider — provider home: stat counters from the dashboard endpoint, a
+// tabbed job list (incoming/active/completed) and accept/reject/advance
+// actions that patch the request status then re-fetch.
 const TABS = [
   { key: 'incoming', label: 'Incoming' },
   { key: 'active', label: 'Active' },
   { key: 'completed', label: 'Completed' }
 ];
 
+// NEXT drives the single "advance" action on active jobs (JobCard calls
+// onAdvance with NEXT[status]); the request flows Accepted → On the Way →
+// In Progress → Completed.
 const NEXT = {
   [STATUS.ACCEPTED]: STATUS.ON_THE_WAY,
   [STATUS.ON_THE_WAY]: STATUS.IN_PROGRESS,
@@ -92,7 +98,12 @@ export default function ProviderDashboard() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {counters.map((c) => (
           <div key={c.label} className="card-surface flex items-center gap-3 p-4">
-            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', toneStyles[c.tone])}>
+            <span
+              className={cn(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                toneStyles[c.tone]
+              )}
+            >
               <Icon name={c.icon} size={20} aria-hidden="true" />
             </span>
             <div className="min-w-0">

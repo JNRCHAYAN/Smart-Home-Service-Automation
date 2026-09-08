@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 
+// Attaches a ref to a popover/panel and invokes `onOutside` when the user
+// clicks anywhere outside it (mousedown) or presses Escape. Returns the ref to
+// place on the wrapper element.
 export function useClickOutside(onOutside) {
   const ref = useRef(null);
 

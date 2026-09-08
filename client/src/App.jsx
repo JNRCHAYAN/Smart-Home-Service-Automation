@@ -1,3 +1,5 @@
+// Root route table: every page renders inside AppLayout. Public routes live
+// here; the Guard wrapper enforces "logged in" (and optional role) access.
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout.jsx';
 import { useAuth } from './store/authStore.js';
@@ -16,6 +18,8 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 
 function Guard({ role, children }) {
   const { token, user } = useAuth();
+  // Redirect unauthenticated users to /login; if a role is required and the
+  // signed-in user lacks it, fall back to the landing page.
   if (!token) return <Navigate to="/login" replace />;
   if (role && user?.role !== role) return <Navigate to="/" replace />;
   return children;
@@ -25,6 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
+        {/* Public marketing + auth pages, reachable without a token */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -96,6 +101,7 @@ export default function App() {
           }
         />
 
+        {/* Any unknown path falls back to the landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -12,6 +12,8 @@ import {
 import { ok, badRequest, notFound } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
+// Admin API handlers: platform-wide stats, user/provider/request listings, and
+// admin edits/deletes. Access is gated once at the router level (admin role).
 export const stats = asyncHandler(async (req, res) => {
   return ok(res, await adminStats());
 });

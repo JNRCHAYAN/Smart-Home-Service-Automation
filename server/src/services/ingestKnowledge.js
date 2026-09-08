@@ -2,6 +2,9 @@ import { chromaRag } from './chromaRag.js';
 import { SERVICE_CATEGORIES, MATCH_WEIGHTS, STATUS, URGENCY_LEVELS, AREAS } from '../constants/index.js';
 import { buildProviders, HERO_PROVIDER_NAME } from './seedData.js';
 
+// Knowledge-base ingestion for RAG: builds static documents (platform overview,
+// matching algorithm, pricing, policies, Bangla keywords...) plus per-service
+// and per-provider documents, embeds them, and adds them to the ChromaDB store.
 const KNOWLEDGE_DOCS = [
   {
     id: 'platform_overview',
@@ -295,41 +298,41 @@ Disputes:
 
 async function ingestAllKnowledge() {
   console.log('🔄 Starting knowledge base ingestion...');
-  
+
   await chromaRag.ensureCollection();
-  
+
   // Add static knowledge documents
-  const staticDocs = KNOWLEDGE_DOCS.map(doc => ({
+  const staticDocs = KNOWLEDGE_DOCS.map((doc) => ({
     content: doc.content,
     metadata: { ...doc.metadata, docId: doc.id }
   }));
-  
+
   await chromaRag.addDocuments(staticDocs);
   console.log(`✅ Added ${staticDocs.length} static knowledge documents`);
 
   // Add service categories
-  const categoryDocs = SERVICE_CATEGORIES.flatMap(cat => 
-    cat.services.map(service => ({
+  const categoryDocs = SERVICE_CATEGORIES.flatMap((cat) =>
+    cat.services.map((service) => ({
       content: `Service: ${service}
 Category: ${cat.label} (${cat.key})
 Icon: ${cat.icon}
 Available in areas: ${Object.keys(AREAS).join(', ')}
 Typical price range: Check provider pricing for ${service}`,
-      metadata: { 
-        type: 'service', 
-        category: cat.key, 
+      metadata: {
+        type: 'service',
+        category: cat.key,
         serviceType: service,
         categoryLabel: cat.label
       }
     }))
   );
-  
+
   await chromaRag.addDocuments(categoryDocs);
   console.log(`✅ Added ${categoryDocs.length} service documents`);
 
   // Add provider profiles (sample - in production, fetch from DB)
   const sampleProviders = buildProviders('hero-user-id');
-  const providerDocs = sampleProviders.map(p => ({
+  const providerDocs = sampleProviders.map((p) => ({
     content: `Provider: ${p.businessName}
 Services: ${p.serviceTypes.join(', ')}
 Rating: ${p.rating}/5.0
@@ -346,7 +349,7 @@ Active jobs: ${p.activeJobCount}`,
       activeJobCount: p.activeJobCount
     }
   }));
-  
+
   await chromaRag.addDocuments(providerDocs);
   console.log(`✅ Added ${providerDocs.length} provider documents`);
 

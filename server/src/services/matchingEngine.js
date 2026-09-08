@@ -6,6 +6,10 @@ import {
   WORKLOAD_THRESHOLD
 } from '../constants/index.js';
 
+// Pure provider-matching engine (no DB reads or side effects). It normalises
+// availability, distance, rating, price and expertise onto 0-1 scales, blends
+// them with urgency-adjusted weights, applies a workload penalty, and returns
+// the top candidates with a per-factor breakdown for a transparent reason.
 /**
  * Haversine distance between two lat/lng points, in kilometres.
  * @returns {number}
@@ -24,6 +28,15 @@ function toMinutes(hhmm) {
   if (typeof hhmm !== 'string' || !hhmm.includes(':')) return 0;
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + (m || 0);
+}
+
+/** Local YYYY-MM-DD string (avoids UTC shifts that mislabel "today"). */
+function localToday() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** True if window A [sa, ea] overlaps window B [sb, eb]. */
@@ -127,6 +140,9 @@ function providerPrice(provider, requestedService) {
  * @returns {Array<{provider, score, breakdown, distanceKm}>}
  */
 export function rankProviders({ providers, request, maxPrice, relatedServices = [], limit = 3 }) {
+  // Urgency re-tunes the factor weights (see MATCH_WEIGHTS in constants): the
+  // more urgent the request, the more weight moves onto availability/distance
+  // and off rating/price, so responders are free, close, and fast.
   const weights = MATCH_WEIGHTS[request.urgency] || MATCH_WEIGHTS.Normal;
 
   const scored = providers
@@ -198,4 +214,60 @@ export function recommendationReason(breakdown, provider) {
   if (Number(provider.rating || 0) >= 4.6) parts.push('highly rated');
   if (parts.length === 0) return 'Best overall match.';
   return parts.join(' • ');
+}
+
+/**
+ * Aggregate the soonest future windows (date + time range) in which at least one
+ * relevant provider still has a free slot. Used when no provider is free at the
+ * customer's chosen slot, so the UI can offer alternative times to re-match.
+ *
+ * Pure function — no DB access, no side effects.
+ * @param {Object} opts
+ * @param {Array} opts.providers relevant providers (active, offer the service)
+ * @param {Object} opts.request request shape (uses serviceType for relevance)
+ * @param {number} [opts.limit=6] maximum number of alternative windows to return
+ * @returns {Array<{date,startTime,endTime,availableProviders,providerNames}>} soonest-first
+ */
+export function availableSlotsSuggestions({ providers, request, limit = 6 }) {
+  const todayStr = localToday();
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Group free slots by (date, window) and remember who is free in each.
+  const buckets = new Map();
+  for (const provider of providers || []) {
+    if (!provider || provider.isActive === false) continue;
+    // Only providers that can realistically do the requested service.
+    if (expertiseMatchScore(provider.serviceTypes, request?.serviceType) <= 0) continue;
+    const slots = Array.isArray(provider.availability) ? provider.availability : [];
+    for (const slot of slots) {
+      if (!slot || slot.isBooked) continue;
+      if (!slot.date || !slot.startTime || !slot.endTime) continue;
+      // Ignore slots that already finished (or are fully in the past).
+      if (slot.date < todayStr) continue;
+      if (slot.date === todayStr && toMinutes(slot.endTime) <= nowMinutes) continue;
+      const key = `${slot.date}|${slot.startTime}|${slot.endTime}`;
+      const entry = buckets.get(key) || {
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        providerIds: [],
+        providerNames: []
+      };
+      entry.providerIds.push(String(provider._id));
+      entry.providerNames.push(provider.businessName);
+      buckets.set(key, entry);
+    }
+  }
+
+  return [...buckets.values()]
+    .sort((a, b) => (a.date === b.date ? toMinutes(a.startTime) - toMinutes(b.startTime) : a.date < b.date ? -1 : 1))
+    .slice(0, limit)
+    .map((e) => ({
+      date: e.date,
+      startTime: e.startTime,
+      endTime: e.endTime,
+      availableProviders: e.providerIds.length,
+      providerNames: e.providerNames.slice(0, 2)
+    }));
 }

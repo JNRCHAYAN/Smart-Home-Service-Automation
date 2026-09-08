@@ -7,6 +7,7 @@ import {
   setStatus,
   cancelRequest,
   rescheduleRequest,
+  updateRequestSlot,
   categoryForService,
   addFeedback,
   invoiceFor
@@ -15,6 +16,8 @@ import { STATUS } from '../constants/index.js';
 import { ok, created, badRequest, notFound, unauthorized } from '../utils/response.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
+// Customer service-request lifecycle: create, view, match/confirm a provider,
+// provider status updates, cancel/reschedule, feedback, and invoice generation.
 const requestSchema = z.object({
   serviceType: z.string().min(2),
   location: z.object({
@@ -106,6 +109,31 @@ export const reschedule = asyncHandler(async (req, res) => {
   } catch (err) {
     return badRequest(res, err.message);
   }
+});
+
+// Change the requested date/time to an alternative slot (picked from the
+// availability suggestions when no provider is free at the original time).
+export const changeSlot = asyncHandler(async (req, res) => {
+  const { preferredDate, start, end } = req.body || {};
+  if (!preferredDate || !start || !end) {
+    return badRequest(res, 'preferredDate, start and end are required');
+  }
+  try {
+    const updated = await updateRequestSlot(req.params.id, req.currentUser._id, {
+      date: preferredDate,
+      start,
+      end
+    });
+    return ok(res, updated, 'Request time updated');
+  } catch (err) {
+    return badRequest(res, err.message);
+  }
+});
+
+// Next-available windows for this request (delegates to the match controller).
+export const availability = asyncHandler(async (req, res) => {
+  const { getAvailability } = await import('./matchController.js');
+  return getAvailability(req, res);
 });
 
 export const myRequests = asyncHandler(async (req, res) => {

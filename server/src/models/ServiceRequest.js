@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Service request documents: what the customer wants (service, schedule,
+// urgency, contact), the lifecycle status plus timeline, persisted candidate
+// provider matches with scores, and optional post-completion feedback.
 const candidateSchema = new mongoose.Schema(
   {
     providerId: String,

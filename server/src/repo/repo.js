@@ -81,6 +81,8 @@ function overlaps(sa, ea, sb, eb) {
 // ---------------------------------------------------------------- seeding
 
 export async function ensureSeed() {
+  // Seed only an empty database: if any user exists the demo data is skipped,
+  // so repeated restarts never duplicate accounts or providers.
   const existing = await User.countDocuments({});
   if (existing > 0) return null;
 
@@ -319,9 +321,10 @@ export async function confirmMatch(requestId, providerId) {
   const ok = await lockAvailabilitySlot(providerId, req);
   if (!ok) throw new Error('No available slot for the selected provider');
 
+  // Only assign the provider here; the opening "Requested" timeline entry was
+  // already written by createRequest, so pushing it again would duplicate it.
   await ServiceRequest.findByIdAndUpdate(requestId, {
-    $set: { matchedProviderId: String(providerId) },
-    $push: { timeline: { status: STATUS.REQUESTED, timestamp: new Date().toISOString() } }
+    $set: { matchedProviderId: String(providerId) }
   });
   return requestById(requestId);
 }
@@ -362,6 +365,28 @@ export async function rescheduleRequest(requestId, customerId) {
   await ServiceRequest.findByIdAndUpdate(requestId, {
     $set: { status: STATUS.REQUESTED, candidateMatches: [] },
     $push: { timeline: { status: 'Rescheduled', timestamp: new Date().toISOString() } }
+  });
+  return requestById(requestId);
+}
+
+// Move a request to a different date/time slot (chosen from the availability
+// suggestions) and clear stale matches so the next /matches call recomputes.
+export async function updateRequestSlot(requestId, customerId, { date, start, end }) {
+  const req = await requestById(requestId);
+  if (!req) throw new Error('Request not found');
+  if (String(req.customerId) !== String(customerId)) throw new Error('Not your request');
+  const changeable = [STATUS.REQUESTED, STATUS.REJECTED, STATUS.CANCELLED].includes(req.status);
+  if (!changeable) throw new Error('Only requests awaiting a provider can change their time');
+  if (req.matchedProviderId) await unlockAvailabilitySlot(req.matchedProviderId, req);
+  await ServiceRequest.findByIdAndUpdate(requestId, {
+    $set: {
+      preferredDate: date,
+      preferredTimeWindow: { start, end },
+      status: STATUS.REQUESTED,
+      matchedProviderId: null,
+      candidateMatches: []
+    },
+    $push: { timeline: { status: 'Time changed', timestamp: new Date().toISOString() } }
   });
   return requestById(requestId);
 }

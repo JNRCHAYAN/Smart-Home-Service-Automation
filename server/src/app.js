@@ -13,11 +13,17 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 
+// Express app wiring. Order is significant: the global middleware (cors, JSON
+// body, request logging, then auth) runs before the routers so req.currentUser
+// is available to every route, and the 404/error handlers run last so they
+// catch anything the routers miss or throw.
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(morgan('dev'));
+// auth parses an optional Bearer JWT and, when valid, attaches the user as
+// req.currentUser; route guards (requireAuth / requireRole) then decide access.
 app.use(auth);
 
 app.use('/api/auth', authRoutes);

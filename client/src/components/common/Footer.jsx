@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import Icon from './Icon.jsx';
 
+// Site footer: brand blurb + link groups. GROUPS entries with a `to` become
+// router links; the marketing-style ones without a `to` render as plain rows.
 const GROUPS = [
   {
     heading: 'Platform',

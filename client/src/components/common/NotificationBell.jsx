@@ -6,6 +6,9 @@ import Badge from './Badge.jsx';
 import { statusClass, timeAgo } from '../../utils/format.js';
 import { useClickOutside } from '../../hooks/useClickOutside.js';
 
+// Header bell + dropdown. The list is only fetched lazily each time the panel
+// opens (fresh unread state on demand); clicking an item jumps to that
+// request's tracking page. Dismiss via outside click or Escape.
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -83,16 +86,12 @@ export default function NotificationBell() {
                         <Icon name="inbox" size={16} aria-hidden="true" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-fg">
-                          {n.serviceType}
-                        </span>
+                        <span className="block truncate text-sm font-semibold text-fg">{n.serviceType}</span>
                         <span className="mt-1 flex items-center gap-2 text-xs text-muted">
                           <Badge variant={statusClass(n.status)}>{n.status}</Badge>
                         </span>
                       </span>
-                      <span className="shrink-0 pt-0.5 text-[11px] text-faint">
-                        {timeAgo(n.timestamp)}
-                      </span>
+                      <span className="shrink-0 pt-0.5 text-[11px] text-faint">{timeAgo(n.timestamp)}</span>
                     </button>
                   </li>
                 ))}

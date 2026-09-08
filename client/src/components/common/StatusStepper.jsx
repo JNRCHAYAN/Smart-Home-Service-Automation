@@ -3,6 +3,9 @@ import Icon from './Icon.jsx';
 import { formatDate } from '../../utils/format.js';
 import { cn } from '../../utils/cn.js';
 
+// Horizontal progress rail for a request's lifecycle. Renders every step in
+// STATUS_FLOW, marking those before/at the current status as done/current.
+// Props: status (current request status), timeline (per-status timestamps).
 const STEP_ICONS = {
   Requested: 'inbox',
   Accepted: 'check',
@@ -18,6 +21,8 @@ function timestampsFor(status, timeline = []) {
 export default function StatusStepper({ status, timeline = [] }) {
   const currentIdx = STATUS_FLOW.indexOf(status);
   const completed = currentIdx !== -1;
+  // Rejected/Cancelled are terminal states not present in STATUS_FLOW; they get
+  // an explanatory alert panel below the rail instead of a progress marker.
   const isRejected = status === 'Rejected' || status === 'Cancelled';
 
   return (
@@ -73,9 +78,7 @@ export default function StatusStepper({ status, timeline = [] }) {
       {isRejected && (
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm font-medium text-danger-text">
           <Icon name="alert" size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-          <span>
-            This request was {status.toLowerCase()}. You can request a new provider to continue.
-          </span>
+          <span>This request was {status.toLowerCase()}. You can request a new provider to continue.</span>
         </div>
       )}
     </div>

@@ -10,6 +10,8 @@ import {
   updateProvider
 } from '../controllers/adminController.js';
 
+// /api/admin routes. A single router-level guard requires an authenticated
+// admin, so none of the individual handlers repeat the role check.
 const router = Router();
 
 router.use(requireAuth, requireRole('admin'));

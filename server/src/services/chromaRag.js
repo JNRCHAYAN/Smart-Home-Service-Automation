@@ -4,6 +4,10 @@ import { ai } from './aiClient.js';
 const CHROMA_URL = env.chromaUrl;
 const COLLECTION_NAME = 'servio_knowledge';
 
+// RAG client for the ChromaDB vector store ('servio_knowledge'): collection
+// lifecycle, document ingestion with embeddings, and semantic query/hybrid
+// search. ChromaDB being unavailable is tolerated, not fatal — query calls
+// degrade to empty results so the chat tools keep working without RAG.
 class ChromaRAG {
   constructor() {
     this.baseUrl = CHROMA_URL;
@@ -33,8 +37,8 @@ class ChromaRAG {
     await this.ensureCollection();
 
     const ids = documents.map((_, i) => `doc_${Date.now()}_${i}`);
-    const texts = documents.map(d => d.content);
-    const metadatas = documents.map(d => d.metadata || {});
+    const texts = documents.map((d) => d.content);
+    const metadatas = documents.map((d) => d.metadata || {});
 
     const embeddings = [];
     for (const text of texts) {
@@ -43,6 +47,8 @@ class ChromaRAG {
         embeddings.push(embedding);
       } catch (e) {
         console.error('Embedding failed:', e.message);
+        // Zero-vector fallback keeps the whole batch ingestible when one text
+        // cannot be embedded (the vector simply matches nothing).
         embeddings.push(new Array(3072).fill(0));
       }
     }
@@ -76,6 +82,8 @@ class ChromaRAG {
         })
       });
 
+      // Graceful degradation: an HTTP failure (e.g. ChromaDB down) returns empty
+      // arrays shaped like a real response instead of rejecting the caller.
       if (!response.ok) {
         return { documents: [[]], metadatas: [[]], distances: [[]] };
       }
@@ -88,6 +96,8 @@ class ChromaRAG {
   }
 
   async hybridSearch(queryText, nResults = 5) {
+    // Hybrid search currently runs the semantic (vector) query only; no lexical
+    // leg is implemented yet, so callers treat this as pure vector retrieval.
     const semanticResults = await this.query(queryText, nResults);
     return semanticResults;
   }

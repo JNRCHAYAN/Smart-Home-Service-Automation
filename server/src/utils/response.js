@@ -1,3 +1,5 @@
+// Uniform response envelope: every handler replies through these helpers so the
+// client always receives { success, message, data } (data is null on failures).
 export function ok(res, data, message = 'success') {
   return res.json({ success: true, message, data });
 }

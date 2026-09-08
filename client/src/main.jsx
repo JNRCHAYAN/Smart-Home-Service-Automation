@@ -1,3 +1,5 @@
+// App entry point: mounts <App/> into #root, wrapped in StrictMode and the
+// BrowserRouter that backs every route in the SPA.
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

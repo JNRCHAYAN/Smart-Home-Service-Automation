@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { dashboard, schedule, updateAvailability } from '../controllers/providerController.js';
 
+// /api/providers routes. The same handlers are exposed twice: for the current
+// user (no id) and keyed by an explicit provider id (plan-aligned URLs).
 const router = Router();
 
 // Current user (no id)

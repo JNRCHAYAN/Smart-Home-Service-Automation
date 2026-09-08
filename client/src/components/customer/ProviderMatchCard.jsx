@@ -5,6 +5,9 @@ import { bdt, distanceLabel } from '../../utils/format.js';
 import { URGENCY_VARIANTS } from '../../constants/index.js';
 import { cn } from '../../utils/cn.js';
 
+// One ranked provider result on the match screen. Props: match (provider +
+// score/breakdown/reason), rank (1-based, 1 = highlighted "Best match"),
+// request (for the urgency badge), onConfirm + confirming (busy flag).
 const FACTORS = [
   { key: 'expertise', label: 'Expertise', bar: 'bg-brand' },
   { key: 'availability', label: 'Availability', bar: 'bg-success' },
@@ -14,6 +17,7 @@ const FACTORS = [
 ];
 
 export default function ProviderMatchCard({ match, rank, request, onConfirm, confirming }) {
+  // match.score is a 0..1 similarity; surface it as an integer percentage.
   const scorePct = Math.round((match.score || 0) * 100);
   const best = rank === 1;
 
@@ -83,9 +87,7 @@ export default function ProviderMatchCard({ match, rank, request, onConfirm, con
                   aria-label={`${f.label} ${pct} percent`}
                 />
               </div>
-              <span className="w-8 shrink-0 text-right text-xs font-bold tabular-nums text-fg">
-                {pct}%
-              </span>
+              <span className="w-8 shrink-0 text-right text-xs font-bold tabular-nums text-fg">{pct}%</span>
             </div>
           );
         })}

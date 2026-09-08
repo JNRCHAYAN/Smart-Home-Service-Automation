@@ -8,6 +8,9 @@ import { buttonClass } from '../../components/common/Button.jsx';
 import { useAuth } from '../../store/authStore.js';
 import { cn } from '../../utils/cn.js';
 
+// Public landing page ("/"): hero, trust stats, service-category grid fetched
+// from the API, how-it-works steps and a closing CTA. CTA destinations adapt to
+// whether a user is signed in (and their role).
 const STEPS = [
   {
     icon: 'search',
@@ -26,12 +29,7 @@ const STEPS = [
   }
 ];
 
-const TRUST = [
-  'Instant match',
-  'No double-booking',
-  'Live job tracking',
-  'Pay after service'
-];
+const TRUST = ['Instant match', 'No double-booking', 'Live job tracking', 'Pay after service'];
 
 const STATS = [
   { value: '8', label: 'Service categories' },
@@ -49,7 +47,10 @@ export default function Landing() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-grid opacity-[0.5] [mask-image:radial-gradient(60%_60%_at_50%_0%,black,transparent)] dark:opacity-[0.15]" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-grid opacity-[0.5] [mask-image:radial-gradient(60%_60%_at_50%_0%,black,transparent)] dark:opacity-[0.15]"
+        />
         <div className="container-page relative py-14 text-center md:py-20">
           <span className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-semibold text-muted shadow-soft">
             <Icon name="shield" size={14} className="text-brand" aria-hidden="true" />
@@ -90,7 +91,12 @@ export default function Landing() {
                 <dd className="order-1 flex items-center justify-center gap-1 font-heading text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">
                   {s.value}
                   {s.suffix && (
-                    <Icon name="star" size={18} className="fill-amber-400 text-amber-400" aria-hidden="true" />
+                    <Icon
+                      name="star"
+                      size={18}
+                      className="fill-amber-400 text-amber-400"
+                      aria-hidden="true"
+                    />
                   )}
                 </dd>
               </div>
@@ -148,9 +154,7 @@ export default function Landing() {
                     <Icon name="arrowupright" size={16} aria-hidden="true" />
                   </span>
                 </div>
-                <h3 className="mt-4 font-heading text-[15px] font-bold leading-snug text-fg">
-                  {cat.label}
-                </h3>
+                <h3 className="mt-4 font-heading text-[15px] font-bold leading-snug text-fg">{cat.label}</h3>
                 <p className="mt-1 text-xs font-medium text-faint">
                   {cat.services.length} service{cat.services.length === 1 ? '' : 's'}
                 </p>
@@ -165,9 +169,7 @@ export default function Landing() {
         <div className="container-page py-12">
           <div className="mx-auto mb-8 max-w-xl text-center">
             <h2 className="font-heading text-2xl font-bold text-fg">How Servio works</h2>
-            <p className="mt-2 text-sm text-muted">
-              From request to done in three simple steps.
-            </p>
+            <p className="mt-2 text-sm text-muted">From request to done in three simple steps.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {STEPS.map((s, i) => (
@@ -202,8 +204,8 @@ export default function Landing() {
               Ready to book your first service?
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-white/85 sm:text-base">
-              Join customers across Dhaka getting their homes taken care of — matched to the right
-              provider in seconds.
+              Join customers across Dhaka getting their homes taken care of — matched to the right provider in
+              seconds.
             </p>
             <Link
               to={bookTo}

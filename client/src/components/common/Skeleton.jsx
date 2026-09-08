@@ -1,5 +1,7 @@
 import { cn } from '../../utils/cn.js';
 
+// Loading placeholders. `.skeleton` (shimmer) is a component-layer class in
+// index.css; these are aria-hidden so the real content announces normally.
 export function Skeleton({ className = '' }) {
   return <div aria-hidden="true" className={cn('skeleton', className)} />;
 }

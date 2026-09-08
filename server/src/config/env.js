@@ -1,5 +1,8 @@
 import 'dotenv/config';
 
+// Reads server/.env (via dotenv) into a single env object. Every value has a
+// development-oriented default so the app runs with minimal setup but can be
+// overridden per environment.
 const env = {
   port: Number(process.env.PORT) || 5001,
   nodeEnv: process.env.NODE_ENV || 'development',

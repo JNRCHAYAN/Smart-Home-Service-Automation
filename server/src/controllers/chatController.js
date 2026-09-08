@@ -4,6 +4,9 @@ import { CHAT_FUNCTIONS, executeFunction } from '../services/chatFunctions.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ok, badRequest, unauthorized } from '../utils/response.js';
 
+// AI chat handlers for the assistant. A role-specific system prompt is chosen,
+// then the model is driven through tool-call loops (plain JSON or SSE streaming)
+// so it can trigger real platform actions via chatFunctions while replying.
 const SYSTEM_PROMPT_CUSTOMER = `You are Servio AI, a helpful assistant for the Smart Home Service Automation platform in Dhaka, Bangladesh.
 
 Your capabilities:
@@ -23,7 +26,7 @@ Guidelines:
 - Support Bangla: "আপনি কি সার্ভিস চান?" / "ধনমন্ডিতে এসি রিপেয়ার লাগবে"
 
 Current date: ${new Date().toISOString().split('T')[0]}
-Service areas: ${Object.keys({Dhanmondi:1,Mirpur:1,Gulshan:1,Uttara:1,Banani:1,Badda:1,Mohammadpur:1,Mogbazar:1}).join(', ')}
+Service areas: ${Object.keys({ Dhanmondi: 1, Mirpur: 1, Gulshan: 1, Uttara: 1, Banani: 1, Badda: 1, Mohammadpur: 1, Mogbazar: 1 }).join(', ')}
 Urgency levels: Normal, Urgent, Emergency`;
 
 const SYSTEM_PROMPT_PROVIDER = `You are Servio AI, assistant for service providers on the Smart Home Service Automation platform.
@@ -47,7 +50,7 @@ Current date: ${new Date().toISOString().split('T')[0]}`;
 
 export const chat = asyncHandler(async (req, res) => {
   const { messages, stream = false } = req.body;
-  
+
   if (!messages || !Array.isArray(messages)) {
     return badRequest(res, 'Messages array required');
   }
@@ -60,6 +63,7 @@ export const chat = asyncHandler(async (req, res) => {
   const isProvider = user.role === 'provider';
   const systemPrompt = isProvider ? SYSTEM_PROMPT_PROVIDER : SYSTEM_PROMPT_CUSTOMER;
 
+  // Identity handed to tool execution so create/status actions act as this user.
   const userContext = {
     userId: user._id,
     role: user.role,
@@ -69,7 +73,7 @@ export const chat = asyncHandler(async (req, res) => {
 
   const fullMessages = [
     { role: 'system', content: systemPrompt },
-    ...messages.map(m => ({
+    ...messages.map((m) => ({
       role: m.role,
       content: m.content,
       tool_calls: m.tool_calls,
@@ -97,10 +101,13 @@ async function handleRegularChat(res, messages, userContext) {
   });
 
   let toolCalls = response.choices[0]?.message?.tool_calls || [];
-  
+
+  // Function-calling loop: run every requested tool, append each result as a
+  // 'tool' message to the conversation, then re-ask until the model stops
+  // requesting tool calls and returns a final text answer.
   while (toolCalls.length > 0) {
     const toolResults = [];
-    
+
     for (const toolCall of toolCalls) {
       const { name, arguments: args } = toolCall.function;
       const parsedArgs = JSON.parse(args);
@@ -124,11 +131,12 @@ async function handleRegularChat(res, messages, userContext) {
     toolCalls = response.choices[0]?.message?.tool_calls || [];
   }
 
-  const finalMessage = response.choices[0]?.message?.content || 'I apologize, but I encountered an issue. Please try again.';
+  const finalMessage =
+    response.choices[0]?.message?.content || 'I apologize, but I encountered an issue. Please try again.';
 
-  return ok(res, { 
+  return ok(res, {
     message: finalMessage,
-    usage: response.usage 
+    usage: response.usage
   });
 }
 
@@ -200,7 +208,7 @@ async function handleStreamChat(res, messages, userContext) {
 
     const flushToolCalls = () => {
       toolCalls = Array.from(pendingToolCalls.values())
-        .filter(tc => tc.id || (tc.function?.name && tc.function?.arguments))
+        .filter((tc) => tc.id || (tc.function?.name && tc.function?.arguments))
         .map(({ id, type, function: fn }) => ({ id, type, function: fn }));
       pendingToolCalls.clear();
     };
@@ -229,19 +237,19 @@ async function handleStreamChat(res, messages, userContext) {
 
     while (toolCalls.length > 0) {
       const toolResults = [];
-      
+
       for (const toolCall of toolCalls) {
         const { name, arguments: args } = toolCall.function;
         const parsedArgs = JSON.parse(args || '{}');
         sendEvent({ type: 'tool_call', name, args: parsedArgs });
-        
+
         const result = await executeFunction(name, parsedArgs, userContext);
         toolResults.push({
           role: 'tool',
           tool_call_id: toolCall.id,
           content: JSON.stringify(result)
         });
-        
+
         sendEvent({ type: 'tool_result', name, result });
       }
 
@@ -256,7 +264,7 @@ async function handleStreamChat(res, messages, userContext) {
 
       toolCalls = response.choices[0]?.message?.tool_calls || [];
       fullResponse = response.choices[0]?.message?.content || '';
-      
+
       if (fullResponse) {
         sendEvent({ type: 'content', content: fullResponse });
       }
@@ -275,15 +283,15 @@ export const ingestKnowledge = asyncHandler(async (req, res) => {
   if (!req.currentUser || req.currentUser.role !== 'customer') {
     return unauthorized(res, 'Admin access required');
   }
-  
+
   const { ingestAllKnowledge } = await import('../services/ingestKnowledge.js');
   await ingestAllKnowledge();
   return ok(res, { message: 'Knowledge base ingested successfully' });
 });
 
 export const chatHealth = asyncHandler(async (req, res) => {
-  return ok(res, { 
-    status: 'ok', 
+  return ok(res, {
+    status: 'ok',
     model: env.deepseekModel,
     features: ['booking', 'tracking', 'provider-dashboard', 'knowledge-base', 'bangla-support']
   });

@@ -8,11 +8,15 @@ import {
   updateStatus,
   cancel,
   reschedule,
+  changeSlot,
+  availability,
   myRequests,
   feedback,
   invoice
 } from '../controllers/requestController.js';
 
+// /api/requests routes: the full request lifecycle. Every route is guarded by
+// requireAuth so controllers always have an identity for ownership checks.
 const router = Router();
 
 router.post('/', requireAuth, create);
@@ -24,6 +28,8 @@ router.post('/:id/confirm', requireAuth, confirm);
 router.patch('/:id/status', requireAuth, updateStatus);
 router.post('/:id/cancel', requireAuth, cancel);
 router.post('/:id/reschedule', requireAuth, reschedule);
+router.patch('/:id/slot', requireAuth, changeSlot);
+router.get('/:id/availability', requireAuth, availability);
 router.post('/:id/feedback', requireAuth, feedback);
 
 export default router;

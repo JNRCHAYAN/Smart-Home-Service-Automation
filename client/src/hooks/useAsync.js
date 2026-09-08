@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiError } from '../api/index.js';
 import { toast } from '../store/toastStore.js';
 
+// Data-fetching hook: runs `fn` on mount and exposes { data, loading, error,
+// run, setData }. `run` re-executes (used to refetch after mutations) and
+// rethrows so callers can add their own handling. Errors auto-surface as a
+// toast unless `silent` is set (used by background polls).
 export function useAsync(fn, deps = [], { onSuccess, silent } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

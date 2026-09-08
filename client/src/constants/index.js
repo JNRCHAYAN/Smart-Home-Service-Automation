@@ -1,3 +1,7 @@
+// Shared domain constants: urgency levels and their Badge/bar tones, the
+// canonical status list + STATUS_FLOW ordering, time windows, Dhaka areas and
+// the service-category icon map.
+
 // Semantic badge/tone variants — see design-system/servio/MASTER.md
 export const URGENCY_LEVELS = ['Normal', 'Urgent', 'Emergency'];
 
@@ -31,6 +35,8 @@ export const STATUS_FLOW = [
   STATUS.COMPLETED
 ];
 
+// STATUS_VARIANTS maps each lifecycle status to a Badge variant name; helpers
+// in utils/format.js consume it via statusClass().
 export const STATUS_VARIANTS = {
   [STATUS.REQUESTED]: 'neutral',
   [STATUS.ACCEPTED]: 'success',

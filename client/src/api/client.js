@@ -1,9 +1,14 @@
 import axios from 'axios';
 
+// Shared axios instance for the REST API. The base URL is the Vite env var or,
+// in dev/prod, the same origin under /api (Vite proxies it in dev).
+
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({ baseURL });
 
+// Attach the JWT to every request. The token is written to localStorage by the
+// auth store on login/register, so this stays in sync with the session.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -11,6 +16,8 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
+  // Unwrap the server envelope: most endpoints return { data: ... }, so resolve
+  // with res.data.data when present and otherwise the raw body.
   (res) => res.data?.data ?? res.data,
   (err) => {
     const status = err.response?.status;

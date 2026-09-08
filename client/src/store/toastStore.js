@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+// Toast queue + imperative helpers. push() appends a toast and auto-dismisses
+// it after 3.2s; ToastHost renders the queue. The module-level `toast` object
+// lets non-component code fire a toast via useToast.getState().
 let idSeq = 0;
 
 export const useToast = create((set) => ({
