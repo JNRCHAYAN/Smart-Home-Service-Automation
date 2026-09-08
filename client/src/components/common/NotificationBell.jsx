@@ -1,78 +1,102 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '../../api/index.js';
 import Icon from './Icon.jsx';
-import { STATUS_COLORS } from '../../constants/index.js';
+import Badge from './Badge.jsx';
 import { statusClass, timeAgo } from '../../utils/format.js';
+import { useClickOutside } from '../../hooks/useClickOutside.js';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
-  const ref = useRef(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const close = () => setOpen(false);
+  const ref = useClickOutside(close);
 
   useEffect(() => {
+    if (!open) return;
+    setLoading(true);
     notificationApi
       .list()
-      .then((d) => setItems(d))
-      .catch(() => setItems([]));
+      .then((d) => setItems(Array.isArray(d) ? d : []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, [open]);
 
-  useEffect(() => {
-    const onClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
-
-  const has = items.length > 0;
+  const unreadCount = items.length;
 
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative rounded-xl border border-ink-200 p-2 text-ink-500 hover:bg-ink-50 hover:text-ink-700"
-        title="Notifications"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={unreadCount ? `Notifications (${unreadCount} new)` : 'Notifications'}
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-muted transition-colors hover:bg-inset hover:text-fg"
       >
-        <Icon name="bell" size={18} />
-        {has && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-            {items.length > 9 ? '9+' : items.length}
+        <Icon name="bell" size={18} aria-hidden="true" />
+        {unreadCount > 0 && (
+          <span className="absolute right-2 top-2 flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-danger" />
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-lift fade-in">
-          <div className="border-b border-ink-100 px-4 py-3 font-bold text-ink-900">Notifications</div>
+        <div
+          role="dialog"
+          aria-label="Notifications"
+          className="absolute right-0 top-12 z-50 w-[min(calc(100vw-2rem),22rem)] animate-pop-in overflow-hidden rounded-2xl border border-line bg-elevated shadow-pop"
+        >
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <h3 className="text-sm font-bold text-fg">Notifications</h3>
+            {unreadCount > 0 && <Badge variant="neutral">{unreadCount} new</Badge>}
+          </div>
           <div className="max-h-80 overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="py-10 text-center text-sm text-ink-400">No notifications yet</div>
+            {loading ? (
+              <div className="space-y-3 p-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="skeleton h-12 rounded-lg" />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                <Icon name="inbox" size={22} className="text-faint" aria-hidden="true" />
+                <p className="text-sm text-muted">No notifications yet</p>
+              </div>
             ) : (
-              items.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => {
-                    setOpen(false);
-                    navigate(`/request/${n.requestId}/track`);
-                  }}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-ink-50"
-                >
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                    <Icon name="inbox" size={16} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-ink-800">{n.serviceType}</span>
-                    <span className="mt-0.5 flex items-center gap-2 text-xs text-ink-400">
-                      <span className={`rounded-full px-1.5 py-0.5 font-semibold ${statusClass(n.status)}`}>
-                        {n.status}
+              <ul>
+                {items.map((n) => (
+                  <li key={n.id} className="border-b border-line/70 last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close();
+                        navigate(`/request/${n.requestId}/track`);
+                      }}
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-inset"
+                    >
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-text">
+                        <Icon name="inbox" size={16} aria-hidden="true" />
                       </span>
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-[11px] text-ink-300">{timeAgo(n.timestamp)}</span>
-                </button>
-              ))
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-fg">
+                          {n.serviceType}
+                        </span>
+                        <span className="mt-1 flex items-center gap-2 text-xs text-muted">
+                          <Badge variant={statusClass(n.status)}>{n.status}</Badge>
+                        </span>
+                      </span>
+                      <span className="shrink-0 pt-0.5 text-[11px] text-faint">
+                        {timeAgo(n.timestamp)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>

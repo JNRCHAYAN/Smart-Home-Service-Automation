@@ -1,19 +1,30 @@
 import Icon from './Icon.jsx';
+import { cn } from '../../utils/cn.js';
 
 const VARIANTS = {
-  primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm shadow-brand-600/20',
-  accent: 'bg-accent-600 text-white hover:bg-accent-700 shadow-sm shadow-accent-600/25',
-  secondary: 'bg-white text-ink-700 border border-ink-200 hover:border-ink-300 hover:bg-ink-50',
-  ghost: 'bg-transparent text-ink-500 hover:bg-ink-100',
-  danger: 'bg-rose-600 text-white hover:bg-rose-700',
-  outlineBrand: 'bg-transparent border border-brand-600 text-brand-700 hover:bg-brand-50'
+  primary: 'bg-brand text-white hover:bg-brand-hover shadow-soft',
+  secondary: 'border border-line2 bg-surface text-fg hover:bg-inset',
+  ghost: 'text-muted hover:bg-inset hover:text-fg',
+  danger: 'bg-danger-action text-white hover:bg-danger-action-hover shadow-soft',
+  outline: 'border border-brand-border bg-transparent text-brand-text hover:bg-brand-soft',
+  soft: 'bg-brand-soft text-brand-text hover:brightness-95'
 };
 
 const SIZES = {
-  sm: 'px-3.5 py-2 text-sm min-h-[38px]',
-  md: 'px-4 py-2.5 text-sm min-h-[44px]',
-  lg: 'px-6 py-3 text-base min-h-[48px]'
+  sm: 'h-9 px-3 text-sm',
+  md: 'h-10 px-4 text-sm',
+  lg: 'h-12 px-6 text-base'
 };
+
+export function buttonClass({ variant = 'primary', size = 'md', full, className }) {
+  return cn(
+    'inline-flex select-none items-center justify-center gap-2 rounded-lg font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-55',
+    VARIANTS[variant],
+    SIZES[size],
+    full && 'w-full',
+    className
+  );
+}
 
 export default function Button({
   children,
@@ -22,21 +33,16 @@ export default function Button({
   icon,
   loading,
   full,
-  className = '',
+  className,
+  type = 'button',
   ...props
 }) {
   return (
-    <button
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] ${
-        VARIANTS[variant]
-      } ${SIZES[size]} ${full ? 'w-full' : ''} ${className}`}
-      disabled={loading || props.disabled}
-      {...props}
-    >
+    <button type={type} className={buttonClass({ variant, size, full, className })} {...props}>
       {loading ? (
-        <Icon name="loader" className="animate-spin" size={18} />
+        <Icon name="loader" className="animate-spin" size={18} aria-hidden="true" />
       ) : (
-        icon && <Icon name={icon} size={18} />
+        icon && <Icon name={icon} size={18} aria-hidden="true" />
       )}
       {children}
     </button>

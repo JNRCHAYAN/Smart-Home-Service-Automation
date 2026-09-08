@@ -1,4 +1,4 @@
-import { STATUS_FLOW, STATUS_COLORS } from '../constants/index.js';
+import { STATUS_FLOW, STATUS_VARIANTS } from '../constants/index.js';
 
 export function formatDate(iso) {
   if (!iso) return '';
@@ -44,7 +44,7 @@ export function statusStep(status) {
 }
 
 export function statusClass(status) {
-  return STATUS_COLORS[status] || 'bg-slate-100 text-slate-600';
+  return STATUS_VARIANTS[status] || 'neutral';
 }
 
 export function formatTime(timestamp) {

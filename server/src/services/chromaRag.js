@@ -1,5 +1,5 @@
 import env from '../config/env.js';
-import { githubModels } from './githubModels.js';
+import { ai } from './aiClient.js';
 
 const CHROMA_URL = env.chromaUrl;
 const COLLECTION_NAME = 'servio_knowledge';
@@ -39,11 +39,11 @@ class ChromaRAG {
     const embeddings = [];
     for (const text of texts) {
       try {
-        const embedding = await githubModels.createEmbedding(text);
+        const embedding = await ai.createEmbedding(text);
         embeddings.push(embedding);
       } catch (e) {
         console.error('Embedding failed:', e.message);
-        embeddings.push(new Array(1536).fill(0));
+        embeddings.push(new Array(3072).fill(0));
       }
     }
 
@@ -63,7 +63,7 @@ class ChromaRAG {
 
   async query(queryText, nResults = 5, filter = {}) {
     try {
-      const queryEmbedding = await githubModels.createEmbedding(queryText);
+      const queryEmbedding = await ai.createEmbedding(queryText);
 
       const response = await fetch(`${this.baseUrl}/api/v1/collections/${this.collectionName}/query`, {
         method: 'POST',

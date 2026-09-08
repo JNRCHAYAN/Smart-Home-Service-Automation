@@ -1,27 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAsync } from '../../hooks/useAsync.js';
 import { servicesApi, requestApi, apiError } from '../../api/index.js';
 import { URGENCY_LEVELS, URGENCY_BAR, TIME_WINDOWS, DHK_AREAS } from '../../constants/index.js';
 import Icon from '../../components/common/Icon.jsx';
 import Button from '../../components/common/Button.jsx';
-import Card from '../../components/common/Card.jsx';
 import { Input, Label, Select, Textarea } from '../../components/common/Field.jsx';
 import { useAuth } from '../../store/authStore.js';
 import { toast } from '../../store/toastStore.js';
 import { formatDateInput } from '../../utils/format.js';
+import { cn } from '../../utils/cn.js';
 
 const STEPS = ['Service', 'Details', 'Schedule', 'Confirm'];
-
-function today() {
-  return formatDateInput(new Date());
-}
+const today = () => formatDateInput(new Date());
 
 export default function NewRequest() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: services } = useAsync(() => servicesApi.list(), []);
-
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     category: '',
@@ -29,13 +25,22 @@ export default function NewRequest() {
     area: 'Dhanmondi',
     problemDetails: '',
     date: today(),
-    timeWindow: `09:00 – 12:00|09:00|12:00`,
+    timeWindow: '09:00 – 12:00|09:00|12:00',
     urgency: 'Normal',
     imageUrl: '',
     contactName: user?.name || '',
     contactPhone: user?.phone || ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const fileRef = useRef(null);
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const category = useMemo(
+    () => (services || []).find((c) => c.key === form.category),
+    [services, form.category]
+  );
+  const area = useMemo(() => DHK_AREAS.find((a) => a.label === form.area), [form.area]);
 
   const onImage = (e) => {
     const file = e.target.files?.[0];
@@ -48,14 +53,6 @@ export default function NewRequest() {
     reader.onload = () => setForm((f) => ({ ...f, imageUrl: reader.result }));
     reader.readAsDataURL(file);
   };
-
-  const category = useMemo(
-    () => (services || []).find((c) => c.key === form.category),
-    [services, form.category]
-  );
-  const area = useMemo(() => DHK_AREAS.find((a) => a.label === form.area), [form.area]);
-
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const canNext =
     step === 0
@@ -71,7 +68,7 @@ export default function NewRequest() {
     const [winLabel, start, end] = form.timeWindow.split('|');
     const payload = {
       serviceType: form.serviceType,
-      location: { address: `${form.area}, Dhaka`, lat: area.lat, lng: area.lng },
+      location: { address: `${form.area}, Dhaka`, lat: area?.lat, lng: area?.lng },
       preferredDate: form.date,
       preferredTimeWindow: { start, end },
       urgency: form.urgency,
@@ -91,93 +88,148 @@ export default function NewRequest() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">New service request</h1>
-      <p className="mt-1 text-sm text-ink-400">Follow the steps to book a provider instantly.</p>
+    <div className="container-page page-shell max-w-3xl">
+      <header className="mb-6">
+        <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
+          New service request
+        </h1>
+        <p className="mt-1 text-sm text-muted">Follow the steps to book a provider instantly.</p>
+      </header>
 
       {/* Progress */}
-      <div className="mt-6 flex items-center gap-2">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex flex-1 items-center gap-2">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                i < step
-                  ? 'bg-brand-600 text-white'
-                  : i === step
-                    ? 'bg-brand-600 text-white pulse-dot'
-                    : 'bg-ink-100 text-ink-400'
-              }`}
-            >
-              {i < step ? <Icon name="check" size={16} /> : i + 1}
-            </div>
-            <span
-              className={`hidden text-sm font-semibold sm:block ${i === step ? 'text-ink-900' : 'text-ink-400'}`}
-            >
-              {s}
-            </span>
-            {i < STEPS.length - 1 && (
-              <div className={`h-1 flex-1 rounded ${i < step ? 'bg-brand-500' : 'bg-ink-100'}`} />
-            )}
-          </div>
-        ))}
-      </div>
+      <ol className="mb-6 flex items-center gap-0" aria-label="Booking progress">
+        {STEPS.map((s, i) => {
+          const done = i < step;
+          const current = i === step;
+          return (
+            <li key={s} className="flex flex-1 items-center last:flex-none">
+              <span
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-colors',
+                  done && 'border-brand bg-brand text-white',
+                  current && 'border-brand bg-brand text-white shadow-glow',
+                  !done && !current && 'border-line2 bg-surface text-faint'
+                )}
+                aria-current={current ? 'step' : undefined}
+              >
+                {done ? <Icon name="check" size={15} aria-hidden="true" /> : i + 1}
+              </span>
+              <span
+                className={cn(
+                  'ml-2 hidden text-sm font-semibold sm:block',
+                  current ? 'text-fg' : done ? 'text-muted' : 'text-faint'
+                )}
+              >
+                {s}
+              </span>
+              {i < STEPS.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  className={cn('mx-3 h-0.5 flex-1 rounded sm:mx-2', done ? 'bg-brand' : 'bg-line2')}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
 
-      <Card className="mt-6">
+      <div className="card-surface p-6">
         {step === 0 && (
-          <div>
-            <Label>Choose a category</Label>
-            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {(services || []).map((c) => (
-                <button
-                  key={c.key}
-                  onClick={() => setForm({ ...form, category: c.key, serviceType: '' })}
-                  className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${
-                    form.category === c.key
-                      ? 'border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600'
-                      : 'border-ink-200 hover:border-brand-300'
-                  }`}
-                >
-                  <Icon name={c.icon} size={20} />
-                  <span className="text-xs font-semibold leading-tight">{c.label}</span>
-                </button>
-              ))}
-            </div>
-            <Label>Service</Label>
-            {!category ? (
-              <p className="text-sm text-ink-400">Select a category above to see services.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {category.services.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setForm({ ...form, serviceType: s })}
-                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all ${
-                      form.serviceType === s
-                        ? 'border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600'
-                        : 'border-ink-200 hover:border-brand-300'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+          <div className="space-y-5">
+            <div>
+              <Label id="cat-label">Choose a category</Label>
+              <div
+                role="group"
+                aria-labelledby="cat-label"
+                className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+              >
+                {(services || []).map((c) => {
+                  const active = form.category === c.key;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setForm({ ...form, category: c.key, serviceType: '' })}
+                      className={cn(
+                        'flex flex-col items-start gap-2.5 rounded-xl border p-3.5 text-left transition-colors',
+                        active
+                          ? 'border-brand bg-brand-soft'
+                          : 'border-line hover:border-line2 hover:bg-inset'
+                      )}
+                    >
+                      <span className="flex w-full items-center justify-between">
+                        <Icon
+                          name={c.icon}
+                          size={20}
+                          className={active ? 'text-brand-text' : 'text-muted'}
+                          aria-hidden="true"
+                        />
+                        {active && (
+                          <Icon name="check" size={16} className="text-brand-text" aria-hidden="true" />
+                        )}
+                      </span>
+                      <span className={cn('text-xs font-semibold leading-tight', active ? 'text-brand-text' : 'text-fg')}>
+                        {c.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
+
+            <div>
+              <Label>Service</Label>
+              {!category ? (
+                <p className="flex items-center gap-2 text-sm text-muted">
+                  <Icon name="chevronleft" size={14} aria-hidden="true" />
+                  Select a category to see its services.
+                </p>
+              ) : (
+                <div role="group" aria-label="Service" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {category.services.map((s) => {
+                    const active = form.serviceType === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setForm({ ...form, serviceType: s })}
+                        className={cn(
+                          'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors',
+                          active
+                            ? 'border-brand bg-brand-soft text-brand-text'
+                            : 'border-line text-muted hover:border-line2 hover:bg-inset'
+                        )}
+                      >
+                        {s}
+                        {active && <Icon name="check" size={15} aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <Label>Location area</Label>
+              <Label htmlFor="req-area">Location area</Label>
               <Select
+                id="req-area"
                 value={form.area}
                 onChange={set('area')}
                 options={DHK_AREAS.map((a) => ({ value: a.label, label: a.label }))}
               />
             </div>
             <div>
-              <Label>Describe the problem</Label>
+              <Label htmlFor="req-details" hint="Optional">
+                Describe the problem
+              </Label>
               <Textarea
+                id="req-details"
                 rows={4}
                 value={form.problemDetails}
                 onChange={set('problemDetails')}
@@ -185,44 +237,56 @@ export default function NewRequest() {
               />
             </div>
             <div>
-              <Label>Photo (optional)</Label>
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-ink-300 bg-ink-50/50 px-4 py-4 transition-colors hover:border-brand-400 hover:bg-brand-50/40">
-                <input type="file" accept="image/*" className="hidden" onChange={onImage} />
+              <Label hint="Optional — max 3MB">Photo of the problem</Label>
+              <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onImage} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex w-full items-center gap-4 rounded-xl border border-dashed border-line2 bg-inset/50 px-4 py-4 text-left transition-colors hover:border-brand hover:bg-brand-soft/50"
+              >
                 {form.imageUrl ? (
-                  <img src={form.imageUrl} alt="uploaded" className="h-20 w-20 rounded-lg object-cover" />
+                  <img
+                    src={form.imageUrl}
+                    alt="Attached preview of the issue"
+                    className="h-16 w-16 rounded-lg object-cover ring-1 ring-line"
+                  />
                 ) : (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-ink-400">
-                    <Icon name="plus" size={20} />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface text-faint ring-1 ring-line">
+                    <Icon name="plus" size={20} aria-hidden="true" />
                   </span>
                 )}
-                <span className="text-sm text-ink-500">
+                <span className="text-sm font-medium text-muted">
                   {form.imageUrl ? 'Attached — click to replace' : 'Click to add a photo of the problem'}
                 </span>
-              </label>
+              </button>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <Label>Preferred date</Label>
-              <Input type="date" min={today()} value={form.date} onChange={set('date')} />
+              <Label htmlFor="req-date">Preferred date</Label>
+              <Input id="req-date" type="date" min={today()} value={form.date} onChange={set('date')} />
             </div>
             <div>
               <Label>Time window</Label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div role="group" aria-label="Time window" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {TIME_WINDOWS.map((w) => {
                   const key = `${w.label}|${w.start}|${w.end}`;
+                  const active = form.timeWindow === key;
                   return (
                     <button
                       key={key}
+                      type="button"
+                      aria-pressed={active}
                       onClick={() => setForm({ ...form, timeWindow: key })}
-                      className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all ${
-                        form.timeWindow === key
-                          ? 'border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600'
-                          : 'border-ink-200 hover:border-brand-300'
-                      }`}
+                      className={cn(
+                        'rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors',
+                        active
+                          ? 'border-brand bg-brand-soft text-brand-text'
+                          : 'border-line text-muted hover:border-line2 hover:bg-inset'
+                      )}
                     >
                       {w.label}
                     </button>
@@ -232,33 +296,45 @@ export default function NewRequest() {
             </div>
             <div>
               <Label>Urgency</Label>
-              <div className="flex gap-2">
-                {URGENCY_LEVELS.map((u) => (
-                  <button
-                    key={u}
-                    onClick={() => setForm({ ...form, urgency: u })}
-                    className={`flex-1 rounded-xl border px-3 py-3 text-sm font-bold transition-all ring-1 ${
-                      form.urgency === u
-                        ? 'border-brand-600 ring-brand-600 text-ink-900'
-                        : 'border-ink-200 ring-transparent text-ink-400'
-                    }`}
-                  >
-                    <span className="mb-1 block h-1.5 rounded bg-gradient-to-r from-transparent to-transparent" />
-                    <span className={`h-1.5 w-full rounded ${URGENCY_BAR[u]}`} />
-                    {u}
-                  </button>
-                ))}
+              <div role="group" aria-label="Urgency" className="grid grid-cols-3 gap-2">
+                {URGENCY_LEVELS.map((u) => {
+                  const active = form.urgency === u;
+                  return (
+                    <button
+                      key={u}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setForm({ ...form, urgency: u })}
+                      className={cn(
+                        'rounded-lg border px-3 py-3 text-center text-sm font-bold transition-colors',
+                        active
+                          ? 'border-brand bg-brand-soft text-brand-text'
+                          : 'border-line text-muted hover:border-line2 hover:bg-inset'
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn('mx-auto mb-1.5 block h-1 w-8 rounded-full', URGENCY_BAR[u])}
+                      />
+                      {u}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="mt-2 text-xs text-ink-400">
-                Emergency requests prioritise speed & closest provider over price.
+              <p className="mt-2 text-xs text-muted">
+                {form.urgency === 'Emergency'
+                  ? 'Emergency prioritises speed and the closest available provider over price.'
+                  : form.urgency === 'Urgent'
+                    ? 'Urgent requests favour quick arrival and availability.'
+                    : 'Normal requests are balanced across matching, quality and price.'}
               </p>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-ink-100 bg-ink-50/50 p-4">
+          <div className="space-y-5">
+            <div className="divide-y divide-line rounded-xl border border-line bg-inset/50 p-4 text-sm">
               <SummaryRow label="Service" value={form.serviceType} />
               <SummaryRow label="Location" value={`${form.area}, Dhaka`} />
               <SummaryRow label="Date" value={form.date} />
@@ -266,48 +342,50 @@ export default function NewRequest() {
               <SummaryRow label="Urgency" value={form.urgency} />
               <SummaryRow label="Problem" value={form.problemDetails || '—'} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <Label>Contact name</Label>
-                <Input value={form.contactName} onChange={set('contactName')} />
+                <Label htmlFor="req-name" required>
+                  Contact name
+                </Label>
+                <Input id="req-name" value={form.contactName} onChange={set('contactName')} />
               </div>
               <div>
-                <Label>Contact phone</Label>
-                <Input value={form.contactPhone} onChange={set('contactPhone')} />
+                <Label htmlFor="req-contact" required>
+                  Contact phone
+                </Label>
+                <Input id="req-contact" value={form.contactPhone} onChange={set('contactPhone')} />
               </div>
             </div>
           </div>
         )}
 
-        <div className="mt-6 flex items-center justify-between border-t border-ink-100 pt-5">
-          <Button
-            variant="ghost"
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-            disabled={step === 0}
-            icon="chevronleft"
-          >
+        <div className="mt-7 flex items-center justify-between gap-3 border-t border-line pt-5">
+          <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
+            <Icon name="chevronleft" size={16} aria-hidden="true" />
             Back
           </Button>
           {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext} icon="chevronright">
+            <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
               Continue
+              <Icon name="chevronright" size={16} aria-hidden="true" />
             </Button>
           ) : (
-            <Button onClick={submit} loading={submitting} icon="send">
+            <Button onClick={submit} loading={submitting}>
               Find my providers
+              <Icon name="send" size={16} aria-hidden="true" />
             </Button>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
 function SummaryRow({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 py-1 text-sm">
-      <span className="shrink-0 text-ink-400">{label}</span>
-      <span className="text-right font-semibold text-ink-900">{value}</span>
+    <div className="flex justify-between gap-4 py-2">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="text-right font-semibold text-fg">{value}</span>
     </div>
   );
 }

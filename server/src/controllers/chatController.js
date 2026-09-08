@@ -1,4 +1,5 @@
-import { githubModels } from '../services/githubModels.js';
+import { ai } from '../services/aiClient.js';
+import env from '../config/env.js';
 import { CHAT_FUNCTIONS, executeFunction } from '../services/chatFunctions.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ok, badRequest, unauthorized } from '../utils/response.js';
@@ -89,7 +90,7 @@ export const chat = asyncHandler(async (req, res) => {
 });
 
 async function handleRegularChat(res, messages, userContext) {
-  let response = await githubModels.chatCompletion(messages, {
+  let response = await ai.chatCompletion(messages, {
     tools: CHAT_FUNCTIONS,
     tool_choice: 'auto',
     temperature: 0.3
@@ -114,7 +115,7 @@ async function handleRegularChat(res, messages, userContext) {
     messages.push({ role: 'assistant', content: null, tool_calls: toolCalls });
     messages.push(...toolResults);
 
-    response = await githubModels.chatCompletion(messages, {
+    response = await ai.chatCompletion(messages, {
       tools: CHAT_FUNCTIONS,
       tool_choice: 'auto',
       temperature: 0.3
@@ -144,10 +145,9 @@ async function handleStreamChat(res, messages, userContext) {
   try {
     let fullResponse = '';
     let toolCalls = [];
-    let currentToolCall = null;
-    let toolCallArgs = '';
+    const pendingToolCalls = new Map();
 
-    const stream = await githubModels.chatCompletionStream(messages, {
+    const stream = await ai.chatCompletionStream(messages, {
       tools: CHAT_FUNCTIONS,
       tool_choice: 'auto',
       temperature: 0.3
@@ -156,52 +156,76 @@ async function handleStreamChat(res, messages, userContext) {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
 
+    let sseBuffer = '';
+
+    const handleLine = (line) => {
+      if (!line.startsWith('data: ')) return;
+      const data = line.slice(6);
+      if (data === '[DONE]') return;
+
+      try {
+        const parsed = JSON.parse(data);
+        const delta = parsed.choices[0]?.delta;
+
+        if (delta?.content) {
+          fullResponse += delta.content;
+          sendEvent({ type: 'content', content: delta.content });
+        }
+
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            // Group streamed fragments by their index so parallel tool
+            // calls whose chunks interleave are assembled correctly.
+            let entry = pendingToolCalls.get(tc.index);
+            if (!entry || tc.id) {
+              entry = {
+                id: tc.id || null,
+                type: 'function',
+                function: { name: tc.function?.name || '', arguments: '' }
+              };
+              pendingToolCalls.set(tc.index, entry);
+            }
+            if (tc.function?.name) {
+              entry.function.name = tc.function.name;
+            }
+            if (tc.function?.arguments) {
+              entry.function.arguments += tc.function.arguments;
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore malformed keep-alive / non-JSON SSE lines.
+      }
+    };
+
+    const flushToolCalls = () => {
+      toolCalls = Array.from(pendingToolCalls.values())
+        .filter(tc => tc.id || (tc.function?.name && tc.function?.arguments))
+        .map(({ id, type, function: fn }) => ({ id, type, function: fn }));
+      pendingToolCalls.clear();
+    };
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices[0]?.delta;
-
-            if (delta?.content) {
-              fullResponse += delta.content;
-              sendEvent({ type: 'content', content: delta.content });
-            }
-
-            if (delta?.tool_calls) {
-              for (const tc of delta.tool_calls) {
-                if (tc.index !== undefined) {
-                  if (currentToolCall) {
-                    toolCalls.push(currentToolCall);
-                  }
-                  currentToolCall = {
-                    id: tc.id,
-                    type: 'function',
-                    function: { name: tc.function?.name || '', arguments: '' }
-                  };
-                }
-                if (tc.function?.arguments) {
-                  currentToolCall.function.arguments += tc.function.arguments;
-                }
-              }
-            }
-          } catch (e) {}
-        }
+      // SSE events can be split across network chunks, so buffer until '\n'
+      // before parsing a line. Without this, tool-call argument fragments
+      // get dropped and the assembled JSON is corrupt.
+      sseBuffer += decoder.decode(value, { stream: true });
+      let newlineIndex;
+      while ((newlineIndex = sseBuffer.indexOf('\n')) !== -1) {
+        const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, '');
+        sseBuffer = sseBuffer.slice(newlineIndex + 1);
+        handleLine(line);
       }
     }
 
-    if (currentToolCall) {
-      toolCalls.push(currentToolCall);
+    if (sseBuffer.trim()) {
+      handleLine(sseBuffer.trim());
     }
+
+    flushToolCalls();
 
     while (toolCalls.length > 0) {
       const toolResults = [];
@@ -224,7 +248,7 @@ async function handleStreamChat(res, messages, userContext) {
       messages.push({ role: 'assistant', content: null, tool_calls: toolCalls });
       messages.push(...toolResults);
 
-      const response = await githubModels.chatCompletion(messages, {
+      const response = await ai.chatCompletion(messages, {
         tools: CHAT_FUNCTIONS,
         tool_choice: 'auto',
         temperature: 0.3
@@ -260,7 +284,7 @@ export const ingestKnowledge = asyncHandler(async (req, res) => {
 export const chatHealth = asyncHandler(async (req, res) => {
   return ok(res, { 
     status: 'ok', 
-    model: 'github-models',
+    model: env.deepseekModel,
     features: ['booking', 'tracking', 'provider-dashboard', 'knowledge-base', 'bangla-support']
   });
 });

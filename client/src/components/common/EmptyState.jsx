@@ -1,13 +1,13 @@
 import Icon from './Icon.jsx';
 
-export default function EmptyState({ icon = 'inbox', title, hint, action }) {
+export default function EmptyState({ icon = 'inbox', title, hint, action, className = '' }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-        <Icon name={icon} size={30} />
-      </div>
-      <h3 className="font-bold text-ink-700">{title}</h3>
-      {hint && <p className="mt-1 max-w-sm text-sm text-ink-400">{hint}</p>}
+    <div className={`flex flex-col items-center justify-center px-4 py-14 text-center ${className}`}>
+      <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-inset text-faint">
+        <Icon name={icon} size={30} aria-hidden="true" />
+      </span>
+      <h3 className="font-heading text-base font-bold text-fg">{title}</h3>
+      {hint && <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted">{hint}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

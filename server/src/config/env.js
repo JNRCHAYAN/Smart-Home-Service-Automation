@@ -9,8 +9,10 @@ const env = {
   demoCustomerPassword: process.env.DEMO_CUSTOMER_PASSWORD || 'pass1234',
   demoProviderPhone: process.env.DEMO_PROVIDER_PHONE || '01800000001',
   demoProviderPassword: process.env.DEMO_PROVIDER_PASSWORD || 'pass1234',
-  githubToken: process.env.GITHUB_TOKEN || '',
-  githubModel: process.env.GITHUB_MODEL || 'gpt-4o-mini',
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
+  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
+  geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   chromaUrl: process.env.CHROMA_URL || 'http://localhost:8000',
   redisUrl: process.env.REDIS_URL || ''
 };

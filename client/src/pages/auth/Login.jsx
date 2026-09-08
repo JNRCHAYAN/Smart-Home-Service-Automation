@@ -4,20 +4,38 @@ import { useAuth } from '../../store/authStore.js';
 import { apiError } from '../../api/index.js';
 import { toast } from '../../store/toastStore.js';
 import Button from '../../components/common/Button.jsx';
-import Card from '../../components/common/Card.jsx';
-import { Input, Label } from '../../components/common/Field.jsx';
+import { Input, Label, FieldError } from '../../components/common/Field.jsx';
+
+const DEMO = [
+  { role: 'Customer', phone: '01700000000', pass: 'pass1234' },
+  { role: 'Provider', phone: '01800000001', pass: 'pass1234' },
+  { role: 'Admin', phone: '01900000000', pass: 'admin1234' }
+];
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ phone: '01700000000', password: 'pass1234' });
+  const [form, setForm] = useState({ phone: '', password: '' });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const validate = () => {
+    const next = {};
+    if (!/^01\d{9}$/.test(form.phone.trim()))
+      next.phone = 'Enter an 11-digit number starting with 01';
+    if (form.password.length < 4) next.password = 'Password must be at least 4 characters';
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     setLoading(true);
     try {
-      const res = await login(form.phone, form.password);
+      const res = await login(form.phone.trim(), form.password);
       toast.success(`Welcome back, ${res.user.name.split(' ')[0]}!`);
       navigate(res.user.role === 'provider' ? '/provider' : res.user.role === 'admin' ? '/admin' : '/');
     } catch (err) {
@@ -28,45 +46,89 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16">
-      <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-ink-900">Welcome back</h1>
-      <p className="mb-6 text-sm text-ink-400">Log in to manage your service requests</p>
-      <Card className="w-full">
-        <form onSubmit={submit} className="space-y-4">
+    <div className="container-page flex justify-center py-10 md:py-16">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">Welcome back</h1>
+          <p className="mt-1.5 text-sm text-muted">Log in to manage your service requests</p>
+        </div>
+
+        <form
+          onSubmit={submit}
+          noValidate
+          className="card-surface space-y-4 p-6 shadow-pop sm:p-7"
+        >
           <div>
-            <Label>Phone number</Label>
+            <Label htmlFor="login-phone" required>
+              Phone number
+            </Label>
             <Input
+              id="login-phone"
+              inputMode="numeric"
+              autoComplete="tel"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              invalid={!!errors.phone}
+              onChange={set('phone')}
               placeholder="01XXXXXXXXX"
+              required
             />
+            <FieldError id="login-phone-error" message={errors.phone} />
           </div>
+
           <div>
-            <Label>Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="login-password" required>
+                Password
+              </Label>
+              <span className="mb-1.5 text-xs text-faint">Demo hackathon build</span>
+            </div>
             <Input
+              id="login-password"
               type="password"
+              autoComplete="current-password"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="••••••••"
+              invalid={!!errors.password}
+              onChange={set('password')}
+              placeholder="At least 4 characters"
+              required
             />
+            <FieldError id="login-password-error" message={errors.password} />
           </div>
+
           <Button type="submit" full loading={loading}>
             Log in
           </Button>
+
+          <div className="rounded-xl border border-line bg-inset/60 p-3.5 text-xs leading-relaxed text-muted">
+            <p className="mb-1.5 font-semibold text-fg">Demo accounts</p>
+            <div className="grid gap-1">
+              {DEMO.map((d) => (
+                <button
+                  key={d.role}
+                  type="button"
+                  onClick={() => {
+                    setForm({ phone: d.phone, password: d.pass });
+                    setErrors({});
+                  }}
+                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-surface"
+                >
+                  <span className="font-medium text-muted">{d.role}</span>
+                  <span className="tabular-nums text-faint">
+                    {d.phone} · {d.pass}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </form>
-        <div className="mt-4 space-y-1 rounded-xl bg-brand-50 px-4 py-3 text-xs text-ink-600">
-          <strong className="text-brand-700">Demo accounts</strong>
-          <p>Customer — 01700000000 · pass1234</p>
-          <p>Provider — 01800000001 · pass1234</p>
-          <p>Admin — 01900000000 · admin1234</p>
-        </div>
-        <p className="mt-4 text-center text-sm text-ink-400">
+
+        <p className="mt-5 text-center text-sm text-muted">
           New here?{' '}
-          <Link to="/register" className="font-semibold text-brand-600 hover:underline">
+          <Link to="/register" className="font-semibold text-brand-text hover:text-brand-text hover:underline">
             Create an account
           </Link>
         </p>
-      </Card>
+      </div>
     </div>
   );
 }

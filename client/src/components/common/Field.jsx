@@ -1,35 +1,94 @@
-export function Label({ children }) {
-  return <label className="mb-1.5 block text-sm font-semibold text-ink-700">{children}</label>;
+import { cn } from '../../utils/cn.js';
+import Icon from './Icon.jsx';
+
+const fieldBase =
+  'w-full rounded-lg border bg-surface px-3.5 text-sm text-fg placeholder:text-faint transition-shadow duration-150 disabled:cursor-not-allowed disabled:bg-inset disabled:text-faint';
+
+const fieldInvalid = 'border-danger focus:border-danger';
+const fieldOk = 'border-line hover:border-line2';
+
+function ringClass(invalid) {
+  return invalid ? 'focus:shadow-[0_0_0_3px_var(--danger-soft)]' : 'focus:shadow-glow focus:border-brand';
 }
 
-export function Input({ className = '', ...props }) {
+export function Label({ children, htmlFor, required, hint, className = '' }) {
+  return (
+    <div className={cn('mb-1.5 flex items-baseline justify-between gap-2', className)}>
+      <label
+        htmlFor={htmlFor}
+        className="text-sm font-semibold text-fg"
+      >
+        {children}
+        {required && (
+          <span className="ml-0.5 text-danger" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      {hint && <span className="text-xs text-faint">{hint}</span>}
+    </div>
+  );
+}
+
+export function FieldError({ id, message }) {
+  if (!message) return null;
+  return (
+    <p id={id} role="alert" className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-danger-text">
+      <Icon name="alertcircle" size={13} aria-hidden="true" />
+      {message}
+    </p>
+  );
+}
+
+export function Input({ invalid, className = '', ...props }) {
+  const invalidFlag = Boolean(invalid);
   return (
     <input
-      className={`w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${className}`}
+      aria-invalid={invalidFlag || undefined}
+      className={cn(fieldBase, 'py-2.5', invalidFlag ? fieldInvalid : fieldOk, ringClass(invalidFlag), className)}
       {...props}
     />
   );
 }
 
-export function Select({ options, className = '', ...props }) {
+export function Select({ options, invalid, placeholder, className = '', ...props }) {
+  const invalidFlag = Boolean(invalid);
   return (
-    <select
-      className={`w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${className}`}
-      {...props}
-    >
-      {options.map((o) => (
-        <option key={o.value ?? o} value={o.value ?? o}>
-          {o.label ?? o}
-        </option>
-      ))}
-    </select>
+    <div className={cn('relative', className)}>
+      <select
+        aria-invalid={invalidFlag || undefined}
+        className={cn(
+          fieldBase,
+          'appearance-none py-2.5 pr-9',
+          invalidFlag ? fieldInvalid : fieldOk,
+          ringClass(invalidFlag)
+        )}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((o) => (
+          <option key={o.value ?? o} value={o.value ?? o}>
+            {o.label ?? o}
+          </option>
+        ))}
+      </select>
+      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-faint" aria-hidden="true">
+        <Icon name="chevron-down" size={16} />
+      </span>
+    </div>
   );
 }
 
-export function Textarea({ className = '', ...props }) {
+export function Textarea({ invalid, className = '', ...props }) {
+  const invalidFlag = Boolean(invalid);
   return (
     <textarea
-      className={`w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${className}`}
+      aria-invalid={invalidFlag || undefined}
+      className={cn(fieldBase, 'py-2.5', invalidFlag ? fieldInvalid : fieldOk, ringClass(invalidFlag), className)}
       {...props}
     />
   );

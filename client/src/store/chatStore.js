@@ -14,7 +14,7 @@ export const useChatStore = create(
         const id = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
         const welcomeMsg = userRole === 'provider' 
           ? "Hello! I'm your Servio provider assistant. I can help you manage incoming jobs, update statuses, view your schedule, and answer any questions. What would you like to do?"
-          : "Hello! I'm Servio AI, your home service assistant. I can help you book services (AC repair, plumbing, cleaning, etc.), track requests, compare providers, and answer questions. How can I help you today? 🇧🇩";
+          : "Hello! I'm Servio AI, your home service assistant. I can help you book services (AC repair, plumbing, cleaning, etc.), track requests, compare providers, and answer questions. How can I help you today?";
         
         set(state => ({
           conversations: {

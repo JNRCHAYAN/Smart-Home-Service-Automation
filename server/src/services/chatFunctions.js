@@ -15,7 +15,6 @@ import {
 } from '../repo/repo.js';
 import { STATUS, URGENCY_LEVELS, SERVICE_CATEGORIES, AREAS } from '../constants/index.js';
 import { chromaRag } from './chromaRag.js';
-import { githubModels } from './githubModels.js';
 import { rankProviders } from './matchingEngine.js';
 
 export const CHAT_FUNCTIONS = [

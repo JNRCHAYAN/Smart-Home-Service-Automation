@@ -51,7 +51,23 @@ export const providerApi = {
 
 export const chatApi = {
   send: (messages, stream = false) => api.post('/chat', { messages, stream }),
-  stream: (messages) => api.post('/chat', { messages, stream: true }),
+  stream: async (messages) => {
+    const baseURL = import.meta.env.VITE_API_URL || '/api';
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${baseURL}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ messages, stream: true })
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.message || 'Request failed');
+    }
+    return res;
+  },
   health: () => api.get('/chat/health')
 };
 

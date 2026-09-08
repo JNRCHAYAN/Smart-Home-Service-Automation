@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useAsync } from '../../hooks/useAsync.js';
 import { providerApi, requestApi, apiError } from '../../api/index.js';
 import { JobCard } from '../../components/provider/JobCard.jsx';
-import Card from '../../components/common/Card.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
 import Icon from '../../components/common/Icon.jsx';
+import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { toast } from '../../store/toastStore.js';
 import { STATUS } from '../../constants/index.js';
+import { cn } from '../../utils/cn.js';
 
 const TABS = [
   { key: 'incoming', label: 'Incoming' },
@@ -40,71 +41,93 @@ export default function ProviderDashboard() {
 
   if (loading || !data) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <div className="h-24 animate-pulse rounded-2xl bg-ink-100" />
+      <div className="container-page page-shell max-w-5xl space-y-4">
+        <Skeleton className="h-9 w-64" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-72 rounded-2xl" />
       </div>
     );
   }
 
   const list = data[tab] || [];
-  const activeJobCount = data.counts.activeJobCount || 0;
   const { provider } = data;
+  const counts = data.counts || {};
 
   const counters = [
-    { label: 'Incoming', value: data.counts.incoming, icon: 'inbox', color: 'text-blue-500 bg-blue-50' },
-    {
-      label: 'Active jobs',
-      value: data.counts.active,
-      icon: 'hammer',
-      color: 'text-orange-500 bg-orange-50'
-    },
-    { label: 'Completed', value: data.counts.completed, icon: 'check', color: 'text-green-500 bg-green-50' },
-    { label: 'Load', value: activeJobCount, icon: 'dashboard', color: 'text-violet-500 bg-violet-50' }
+    { label: 'Incoming', value: counts.incoming, icon: 'inbox', tone: 'info' },
+    { label: 'Active jobs', value: counts.active, icon: 'hammer', tone: 'warning' },
+    { label: 'Completed', value: counts.completed, icon: 'checkcircle', tone: 'success' },
+    { label: 'Current load', value: counts.activeJobCount || 0, icon: 'dashboard', tone: 'brand' }
   ];
 
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-ink-900">
-            <Icon name="dashboard" size={24} className="text-brand-600" />{' '}
-            {provider?.businessName || 'Dashboard'}
-          </h1>
-          <p className="mt-1 text-sm text-ink-400">Manage incoming and active service jobs.</p>
-        </div>
-        <div className="rounded-xl bg-ink-50 px-4 py-2 text-sm font-semibold text-ink-500">
-          Rating: <span className="text-amber-500">{'★'.repeat(Math.round(provider?.rating || 0))}</span>{' '}
-          {(provider?.rating || 0).toFixed(1)}
-        </div>
-      </div>
+  const toneStyles = {
+    brand: 'bg-brand-soft text-brand-text',
+    info: 'bg-info-soft text-info-text',
+    warning: 'bg-warning-soft text-warning-text',
+    success: 'bg-success-soft text-success-text'
+  };
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+  return (
+    <div className="container-page page-shell max-w-5xl">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
+            {provider?.businessName || 'Provider dashboard'}
+          </h1>
+          <p className="mt-1 text-sm text-muted">Manage incoming and active service jobs.</p>
+        </div>
+        {provider?.rating != null && (
+          <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg">
+            <Icon name="star" size={16} className="fill-amber-400 text-amber-400" aria-hidden="true" />
+            {Number(provider.rating).toFixed(1)}
+            <span className="font-normal text-faint">rating</span>
+          </div>
+        )}
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {counters.map((c) => (
-          <Card key={c.label} className="flex items-center gap-3">
-            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.color}`}>
-              <Icon name={c.icon} size={20} />
+          <div key={c.label} className="card-surface flex items-center gap-3 p-4">
+            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', toneStyles[c.tone])}>
+              <Icon name={c.icon} size={20} aria-hidden="true" />
             </span>
-            <div>
-              <div className="text-2xl font-extrabold text-ink-900">{c.value}</div>
-              <div className="text-xs font-semibold text-ink-400">{c.label}</div>
+            <div className="min-w-0">
+              <div className="font-heading text-2xl font-extrabold tabular-nums text-fg">{c.value}</div>
+              <div className="truncate text-xs font-semibold text-muted">{c.label}</div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
-      <div className="mt-6 flex gap-2 rounded-xl bg-ink-100 p-1">
+      <div
+        role="tablist"
+        aria-label="Jobs"
+        className="mt-6 inline-flex w-full gap-1 rounded-xl border border-line bg-surface p-1 sm:w-auto"
+      >
         {TABS.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-              tab === t.key ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-400'
-            }`}
+            className={cn(
+              'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors sm:flex-none',
+              tab === t.key ? 'bg-brand text-white' : 'text-muted hover:bg-inset hover:text-fg'
+            )}
           >
-            {t.label}{' '}
-            {data.counts[t.key] > 0 && (
-              <span className="ml-1 rounded-full bg-brand-600 px-1.5 text-xs text-white">
-                {data.counts[t.key]}
+            {t.label}
+            {counts[t.key] > 0 && (
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums',
+                  tab === t.key ? 'bg-white/20 text-white' : 'bg-inset text-fg'
+                )}
+              >
+                {counts[t.key]}
               </span>
             )}
           </button>
@@ -113,9 +136,9 @@ export default function ProviderDashboard() {
 
       <div className="mt-4 space-y-3">
         {list.length === 0 ? (
-          <Card>
+          <div className="card-surface">
             <EmptyState
-              icon={tab === 'active' ? 'clock' : 'inbox'}
+              icon={tab === 'active' ? 'clock' : tab === 'completed' ? 'checkcircle' : 'inbox'}
               title={
                 tab === 'active'
                   ? 'No active jobs'
@@ -129,7 +152,7 @@ export default function ProviderDashboard() {
                   : 'You are all caught up.'
               }
             />
-          </Card>
+          </div>
         ) : (
           list.map((job) => (
             <JobCard

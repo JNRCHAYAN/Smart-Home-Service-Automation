@@ -1,7 +1,29 @@
-export default function Badge({ children, className = '' }) {
+import { cn } from '../../utils/cn.js';
+
+const VARIANTS = {
+  neutral: 'bg-inset text-muted ring-line',
+  brand: 'bg-brand-soft text-brand-text ring-brand-border',
+  success: 'bg-success-soft text-success-text ring-success-border',
+  warning: 'bg-warning-soft text-warning-text ring-warning-border',
+  danger: 'bg-danger-soft text-danger-text ring-danger-border',
+  info: 'bg-info-soft text-info-text ring-info-border'
+};
+
+export default function Badge({
+  children,
+  variant = 'neutral',
+  icon,
+  className = '',
+  ...props
+}) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${className}`}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset',
+        VARIANTS[variant] || VARIANTS.neutral,
+        className
+      )}
+      {...props}
     >
       {children}
     </span>

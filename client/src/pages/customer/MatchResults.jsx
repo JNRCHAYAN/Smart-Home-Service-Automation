@@ -3,10 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAsync } from '../../hooks/useAsync.js';
 import { requestApi, apiError } from '../../api/index.js';
 import ProviderMatchCard from '../../components/customer/ProviderMatchCard.jsx';
-import Card from '../../components/common/Card.jsx';
-import { CardSkeleton } from '../../components/common/Skeleton.jsx';
 import EmptyState from '../../components/common/EmptyState.jsx';
-import Button from '../../components/common/Button.jsx';
+import { CardSkeleton } from '../../components/common/Skeleton.jsx';
 import { toast } from '../../store/toastStore.js';
 import { formatDate } from '../../utils/format.js';
 
@@ -39,19 +37,22 @@ export default function MatchResults() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">Smart match results</p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
-          Top providers for your {request?.serviceType || 'service'}
+    <div className="container-page page-shell max-w-3xl">
+      <header className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-brand-text">
+          Smart match results
+        </p>
+        <h1 className="mt-1 font-heading text-2xl font-extrabold tracking-tight text-fg">
+          Top providers for {request?.serviceType || 'your request'}
         </h1>
         {request && (
-          <p className="mt-1 text-sm text-ink-400">
-            {request.serviceType} · {formatDate(request.preferredDate)} · {request.preferredTimeWindow.start}–
-            {request.preferredTimeWindow.end} · <span className="font-semibold">{request.urgency}</span>
+          <p className="mt-1.5 text-sm text-muted">
+            {request.serviceType} · {formatDate(request.preferredDate)} ·{' '}
+            {request.preferredTimeWindow.start}–{request.preferredTimeWindow.end} ·{' '}
+            <span className="font-semibold text-fg">{request.urgency}</span>
           </p>
         )}
-      </div>
+      </header>
 
       {loading ? (
         <div className="space-y-4">
@@ -73,33 +74,25 @@ export default function MatchResults() {
           ))}
         </div>
       ) : (
-        <Card>
+        <div className="card-surface">
           <EmptyState
             icon="search"
             title="No providers available right now"
-            hint="Try adjusting your date/time window or choosing a different service."
+            hint="Try adjusting your date or time window, or choose a different service."
           />
-        </Card>
+        </div>
       )}
 
       {request && (
         <div className="mt-6 flex justify-center">
           <Link
             to={`/request/${id}/track`}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-ink-400 hover:text-ink-700"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-fg"
           >
-            Skip and view request tracking <IconArrow />
+            Skip and view request tracking
           </Link>
         </div>
       )}
     </div>
-  );
-}
-
-function IconArrow() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
   );
 }

@@ -1,15 +1,16 @@
+// Semantic badge/tone variants — see design-system/servio/MASTER.md
 export const URGENCY_LEVELS = ['Normal', 'Urgent', 'Emergency'];
 
-export const URGENCY_COLORS = {
-  Normal: 'bg-sky-100 text-sky-700',
-  Urgent: 'bg-amber-100 text-amber-700',
-  Emergency: 'bg-rose-100 text-rose-700'
+export const URGENCY_VARIANTS = {
+  Normal: 'neutral',
+  Urgent: 'warning',
+  Emergency: 'danger'
 };
 
 export const URGENCY_BAR = {
-  Normal: 'bg-sky-500',
-  Urgent: 'bg-amber-500',
-  Emergency: 'bg-rose-500'
+  Normal: 'bg-success',
+  Urgent: 'bg-warning',
+  Emergency: 'bg-danger'
 };
 
 export const STATUS = {
@@ -30,14 +31,14 @@ export const STATUS_FLOW = [
   STATUS.COMPLETED
 ];
 
-export const STATUS_COLORS = {
-  [STATUS.REQUESTED]: 'bg-blue-100 text-blue-700',
-  [STATUS.ACCEPTED]: 'bg-amber-100 text-amber-700',
-  [STATUS.ON_THE_WAY]: 'bg-violet-100 text-violet-700',
-  [STATUS.IN_PROGRESS]: 'bg-orange-100 text-orange-700',
-  [STATUS.COMPLETED]: 'bg-green-100 text-green-700',
-  [STATUS.REJECTED]: 'bg-red-100 text-red-700',
-  [STATUS.CANCELLED]: 'bg-slate-200 text-slate-600'
+export const STATUS_VARIANTS = {
+  [STATUS.REQUESTED]: 'neutral',
+  [STATUS.ACCEPTED]: 'success',
+  [STATUS.ON_THE_WAY]: 'warning',
+  [STATUS.IN_PROGRESS]: 'info',
+  [STATUS.COMPLETED]: 'success',
+  [STATUS.REJECTED]: 'danger',
+  [STATUS.CANCELLED]: 'neutral'
 };
 
 export const TIME_WINDOWS = [

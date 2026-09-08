@@ -5,10 +5,12 @@ import { useAuth } from '../store/authStore.js';
 import { toast } from '../store/toastStore.js';
 import Card from '../components/common/Card.jsx';
 import Button from '../components/common/Button.jsx';
-import { Input, Select, Label } from '../components/common/Field.jsx';
 import Icon from '../components/common/Icon.jsx';
+import { Input, Select, Label } from '../components/common/Field.jsx';
+import { Skeleton } from '../components/common/Skeleton.jsx';
 import { DHK_AREAS } from '../constants/index.js';
 import { formatDate } from '../utils/format.js';
+import { cn } from '../utils/cn.js';
 
 const WINDOWS = [
   { start: '09:00', end: '12:00' },
@@ -30,41 +32,37 @@ function nextDays(n = 7) {
 export default function Settings() {
   const { user } = useAuth();
   const [tab, setTab] = useState(user?.role === 'provider' ? 'provider' : 'profile');
+  const tabs = user?.role === 'provider' ? ['profile', 'provider'] : ['profile'];
 
   return (
-    <div className="container-page py-10">
-      <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-white">
-          <Icon name="user" size={22} />
+    <div className="container-page page-shell">
+      <header className="mb-6 flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-soft text-brand-text">
+          <Icon name="user" size={22} aria-hidden="true" />
         </span>
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">Profile & Settings</h1>
-          <p className="text-sm text-ink-400">Manage your account and service preferences.</p>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
+            Profile & settings
+          </h1>
+          <p className="text-sm text-muted">Manage your account and service preferences.</p>
         </div>
-      </div>
+      </header>
 
-      <div className="mb-6 flex w-full max-w-md gap-2 rounded-xl bg-ink-100 p-1">
-        <button
-          onClick={() => setTab('profile')}
-          className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-            tab === 'profile' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-400'
-          }`}
-        >
-          Profile
-        </button>
-        <button
-          onClick={() => setTab('provider')}
-          disabled={user?.role !== 'provider'}
-          className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-            user?.role !== 'provider'
-              ? 'cursor-not-allowed opacity-40'
-              : tab === 'provider'
-                ? 'bg-white text-ink-900 shadow-sm'
-                : 'text-ink-400'
-          }`}
-        >
-          Provider
-        </button>
+      <div className="mb-6 inline-flex w-full gap-1 rounded-xl border border-line bg-surface p-1 sm:w-auto">
+        {tabs.map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={tab === t}
+            onClick={() => setTab(t)}
+            className={cn(
+              'flex-1 rounded-lg px-5 py-2 text-sm font-semibold capitalize transition-colors sm:flex-none',
+              tab === t ? 'bg-brand text-white' : 'text-muted hover:bg-inset hover:text-fg'
+            )}
+          >
+            {t}
+          </button>
+        ))}
       </div>
 
       {tab === 'profile' ? <ProfileTab /> : <ProviderTab />}
@@ -82,8 +80,6 @@ function ProfileTab() {
   useEffect(() => {
     if (me) setForm((f) => ({ ...f, name: me.name || '', email: me.email || '' }));
   }, [me?._id]);
-
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const save = async () => {
     setSaving(true);
@@ -109,22 +105,31 @@ function ProfileTab() {
     <Card className="max-w-xl">
       <div className="space-y-4">
         <div>
-          <Label>Full name</Label>
-          <Input value={form.name} onChange={set('name')} />
+          <Label htmlFor="pf-name">Full name</Label>
+          <Input id="pf-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </div>
         <div>
-          <Label>Email</Label>
-          <Input type="email" value={form.email} onChange={set('email')} placeholder="you@email.com" />
+          <Label htmlFor="pf-email" hint="Optional">
+            Email
+          </Label>
+          <Input
+            id="pf-email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="you@email.com"
+          />
         </div>
         <div>
-          <Label>Phone</Label>
-          <Input value={me?.phone || ''} disabled className="bg-ink-50 text-ink-400" />
+          <Label htmlFor="pf-phone">Phone</Label>
+          <Input id="pf-phone" value={me?.phone || ''} disabled />
         </div>
         <div>
-          <Label>Primary location</Label>
+          <Label htmlFor="pf-area">Primary location</Label>
           <Select
+            id="pf-area"
             value={form.area}
-            onChange={set('area')}
+            onChange={(e) => setForm({ ...form, area: e.target.value })}
             options={DHK_AREAS.map((a) => ({ value: a.label, label: a.label }))}
           />
         </div>
@@ -146,6 +151,7 @@ function ProviderTab() {
   const [saving, setSaving] = useState(false);
 
   const allServices = useMemo(() => (cats || []).flatMap((c) => c.services), [cats]);
+  const days = useMemo(() => nextDays(), []);
 
   useEffect(() => {
     if (provider) {
@@ -162,7 +168,7 @@ function ProviderTab() {
   if (!form)
     return (
       <Card className="max-w-2xl">
-        <div className="h-24 animate-pulse rounded-xl bg-ink-100" />
+        <Skeleton className="h-40" />
       </Card>
     );
 
@@ -189,9 +195,6 @@ function ProviderTab() {
     setForm({ ...form, serviceTypes: nt, pricePerService: pp });
   };
 
-  const setPrice = (svc, val) =>
-    setForm({ ...form, pricePerService: { ...form.pricePerService, [svc]: Number(val) || 0 } });
-
   const toggleSlot = (date, win) => {
     const exists = form.availability.find(
       (s) => s.date === date && s.startTime === win.start && s.endTime === win.end
@@ -203,10 +206,7 @@ function ProviderTab() {
       );
       setForm({ ...form, availability: next });
     } else {
-      setForm({
-        ...form,
-        availability: [...form.availability, { ...win, date, isBooked: false }]
-      });
+      setForm({ ...form, availability: [...form.availability, { ...win, date, isBooked: false }] });
     }
   };
 
@@ -233,111 +233,119 @@ function ProviderTab() {
 
   return (
     <div className="grid max-w-5xl gap-5 lg:grid-cols-2">
-      {/* Business info */}
       <Card>
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-ink-900">
-          <Icon name="home" size={18} className="text-brand-600" /> Business
+        <h2 className="mb-4 flex items-center gap-2 font-heading text-base font-bold text-fg">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand-text">
+            <Icon name="home" size={15} aria-hidden="true" />
+          </span>
+          Business
         </h2>
         <div className="space-y-4">
           <div>
-            <Label>Business name</Label>
+            <Label htmlFor="biz-name">Business name</Label>
             <Input
+              id="biz-name"
               value={form.businessName}
               onChange={(e) => setForm({ ...form, businessName: e.target.value })}
             />
           </div>
-          <div className="flex items-center justify-between rounded-xl border border-ink-100 px-4 py-3">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-line px-4 py-3">
             <div>
-              <div className="text-sm font-semibold text-ink-800">Accepting new jobs</div>
-              <div className="text-xs text-ink-400">Turn off to stop receiving matches</div>
+              <div className="text-sm font-semibold text-fg">Accepting new jobs</div>
+              <div className="text-xs text-muted">Turn off to stop receiving matches</div>
             </div>
-            <button
-              onClick={() => setForm({ ...form, isActive: !form.isActive })}
-              className={`relative h-6 w-11 rounded-full transition-colors ${form.isActive ? 'bg-brand-600' : 'bg-ink-200'}`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
-                  form.isActive ? 'left-5' : 'left-0.5'
-                }`}
-              />
-            </button>
+            <Toggle checked={form.isActive} onChange={(v) => setForm({ ...form, isActive: v })} label="Accepting new jobs" />
           </div>
         </div>
       </Card>
 
-      {/* Services */}
       <Card>
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-ink-900">
-          <Icon name="wrench" size={18} className="text-brand-600" /> Services & pricing
+        <h2 className="mb-4 flex items-center gap-2 font-heading text-base font-bold text-fg">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand-text">
+            <Icon name="wrench" size={15} aria-hidden="true" />
+          </span>
+          Services & pricing
         </h2>
-        <div className="space-y-2">
-          {form.serviceTypes.length === 0 && (
-            <p className="text-sm text-ink-400">Add services you offer to receive matching requests.</p>
-          )}
+        {form.serviceTypes.length === 0 && (
+          <p className="mb-3 rounded-lg bg-inset px-3 py-2 text-sm text-muted">
+            Add services you offer to receive matching requests.
+          </p>
+        )}
+        <ul className="space-y-2">
           {form.serviceTypes.map((svc) => (
-            <div key={svc} className="flex items-center gap-2">
-              <span className="flex-1 truncate text-sm font-medium text-ink-800">{svc}</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-ink-400">৳</span>
+            <li key={svc} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{svc}</span>
+              <span className="flex items-center gap-1">
+                <span className="text-xs text-faint">৳</span>
                 <Input
                   type="number"
+                  aria-label={`Price for ${svc}`}
                   value={form.pricePerService[svc] || ''}
-                  onChange={(e) => setPrice(svc, e.target.value)}
+                  onChange={(e) => setForm({ ...form, pricePerService: { ...form.pricePerService, [svc]: Number(e.target.value) || 0 } })}
                   className="w-20 py-1.5 text-right"
                 />
-              </div>
+              </span>
               <button
+                type="button"
+                aria-label={`Remove ${svc}`}
                 onClick={() => removeService(svc)}
-                className="rounded-lg p-1.5 text-ink-300 hover:bg-rose-50 hover:text-rose-500"
+                className="rounded-lg p-1.5 text-faint transition-colors hover:bg-danger-soft hover:text-danger-text"
               >
-                <Icon name="x" size={16} />
+                <Icon name="trash" size={16} aria-hidden="true" />
               </button>
-            </div>
+            </li>
           ))}
-          <div className="mt-3 flex gap-2 border-t border-ink-100 pt-3">
+        </ul>
+        <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-line pt-4">
+          <div className="min-w-[10rem] flex-1">
+            <Label htmlFor="add-svc">Service</Label>
             <Select
+              id="add-svc"
               value={newService}
               onChange={(e) => setNewService(e.target.value)}
-              placeholder="Add a service"
-              options={[
-                { value: '', label: 'Add a service…' },
-                ...allServices.map((s) => ({ value: s, label: s }))
-              ]}
+              placeholder="Choose a service…"
+              options={allServices.map((s) => ({ value: s, label: s }))}
             />
+          </div>
+          <div className="w-28">
+            <Label htmlFor="add-price">Price (৳)</Label>
             <Input
+              id="add-price"
               type="number"
-              placeholder="৳ Price"
+              placeholder="0"
               value={newPrice}
               onChange={(e) => setNewPrice(e.target.value)}
-              className="w-28"
             />
-            <Button variant="secondary" size="sm" onClick={addService} icon="plus">
-              Add
-            </Button>
           </div>
+          <Button variant="secondary" onClick={addService} icon="plus">
+            Add
+          </Button>
         </div>
       </Card>
 
-      {/* Work schedule */}
       <Card className="lg:col-span-2">
-        <div className="mb-1 flex items-center gap-2 font-bold text-ink-900">
-          <Icon name="calendar" size={18} className="text-brand-600" /> Work schedule
-        </div>
-        <p className="mb-4 text-sm text-ink-400">
-          Tap the next 7 days to open or close availability. Locked slots are already booked.
+        <h2 className="flex items-center gap-2 font-heading text-base font-bold text-fg">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand-text">
+            <Icon name="calendar" size={15} aria-hidden="true" />
+          </span>
+          Work schedule
+        </h2>
+        <p className="mb-4 mt-1.5 text-sm text-muted">
+          Select slots over the next 7 days. Booked slots are locked.
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full border-separate" style={{ borderSpacing: '4px' }}>
+
+        <div className="overflow-x-auto rounded-xl border border-line">
+          <table className="w-full border-separate text-center" style={{ borderSpacing: '3px' }}>
             <thead>
               <tr>
-                <th className="w-24" />
-                {nextDays().map((d) => (
-                  <th key={d} className="min-w-[26px] text-center text-[11px] font-semibold text-ink-400">
-                    {
-                      formatDate(d)
-                        .replace(/ 2026$/, '')
-                        .split(' ')[0]
-                    }
+                <th className="w-28" aria-hidden="true" />
+                {days.map((d) => (
+                  <th key={d} className="min-w-[2rem] pb-1 text-[11px] font-semibold text-muted">
+                    {formatDate(d)
+                      .replace(/ \d{4}$/, '')
+                      .split(' ')
+                      .slice(0, 2)
+                      .join(' ')}
                   </th>
                 ))}
               </tr>
@@ -345,32 +353,39 @@ function ProviderTab() {
             <tbody>
               {WINDOWS.map((win) => (
                 <tr key={win.start}>
-                  <td className="pr-2 text-right text-xs font-medium text-ink-500">
+                  <td className="pr-2 text-right text-xs font-medium tabular-nums text-muted">
                     {win.start}–{win.end}
                   </td>
-                  {nextDays().map((date) => {
+                  {days.map((date) => {
                     const slot = form.availability.find(
                       (s) => s.date === date && s.startTime === win.start && s.endTime === win.end
                     );
                     const locked = slot?.isBooked;
                     const on = !!slot && !locked;
                     return (
-                      <td key={date} className="text-center">
+                      <td key={date}>
                         <button
-                          onClick={() => toggleSlot(date, win)}
+                          type="button"
+                          aria-pressed={on}
                           disabled={locked}
-                          title={
-                            locked ? 'Booked' : on ? 'Available — click to close' : 'Closed — click to open'
-                          }
-                          className={`h-8 w-full rounded-lg transition-colors ${
-                            locked
-                              ? 'cursor-not-allowed bg-ink-200 text-ink-300'
-                              : on
-                                ? 'bg-brand-500 text-white hover:bg-brand-600'
-                                : 'bg-ink-100 text-ink-300 hover:bg-ink-200'
+                          aria-label={`${formatDate(date)} ${win.start}–${win.end}: ${
+                            locked ? 'booked' : on ? 'available — remove' : 'closed — add'
                           }`}
+                          onClick={() => toggleSlot(date, win)}
+                          className={cn(
+                            'h-9 w-full rounded-lg border text-faint transition-colors',
+                            locked
+                              ? 'cursor-not-allowed border-line bg-inset/60 text-faint/60'
+                              : on
+                                ? 'border-brand bg-brand text-white hover:bg-brand-hover'
+                                : 'border-line hover:border-line2 hover:bg-inset'
+                          )}
                         >
-                          {locked ? '×' : on ? '✓' : ''}
+                          {locked ? (
+                            <Icon name="ban" size={14} aria-hidden="true" />
+                          ) : on ? (
+                            <Icon name="check" size={15} aria-hidden="true" />
+                          ) : null}
                         </button>
                       </td>
                     );
@@ -380,12 +395,35 @@ function ProviderTab() {
             </tbody>
           </table>
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-5 flex justify-end">
           <Button onClick={save} loading={saving} icon="check">
             Save settings
           </Button>
         </div>
       </Card>
     </div>
+  );
+}
+
+function Toggle({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+        checked ? 'bg-brand' : 'bg-line2'
+      )}
+    >
+      <span
+        className={cn(
+          'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all',
+          checked ? 'left-[1.375rem]' : 'left-0.5'
+        )}
+      />
+    </button>
   );
 }

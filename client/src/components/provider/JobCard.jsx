@@ -2,62 +2,77 @@ import Button from '../common/Button.jsx';
 import Badge from '../common/Badge.jsx';
 import Icon from '../common/Icon.jsx';
 import { bdt, formatDate, statusClass } from '../../utils/format.js';
-import { URGENCY_COLORS } from '../../constants/index.js';
+import { URGENCY_VARIANTS } from '../../constants/index.js';
 
 export function JobCard({ job, onAccept, onReject, onAdvance, busy }) {
   const canAccept = job.status === 'Requested';
   const active = ['Accepted', 'On the Way', 'In Progress'].includes(job.status);
 
   return (
-    <div className="rounded-2xl border border-ink-200/70 bg-white p-5 shadow-sm">
+    <article className="card-surface p-5 transition-shadow hover:shadow-pop">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-extrabold text-ink-900">{job.serviceType}</h3>
-            <Badge className={URGENCY_COLORS[job.urgency]}>{job.urgency}</Badge>
+            <h3 className="font-heading text-base font-bold text-fg">{job.serviceType}</h3>
+            <Badge variant={URGENCY_VARIANTS[job.urgency] || 'neutral'}>{job.urgency}</Badge>
           </div>
-          <p className="mt-1 text-sm text-ink-500">
+          <p className="mt-1 text-sm text-muted">
             {job.location?.address} · {formatDate(job.preferredDate)} · {job.preferredTimeWindow.start}–
             {job.preferredTimeWindow.end}
           </p>
         </div>
-        <Badge className={statusClass(job.status)}>{job.status}</Badge>
+        <Badge variant={statusClass(job.status)}>{job.status}</Badge>
       </div>
 
       {job.problemDetails && (
-        <p className="mt-3 rounded-xl bg-ink-50 px-3 py-2 text-sm text-ink-600">“{job.problemDetails}”</p>
+        <p className="mt-3 rounded-xl bg-inset px-3.5 py-2.5 text-sm italic text-muted">
+          “{job.problemDetails}”
+        </p>
       )}
 
-      <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-4">
-        <div className="text-sm text-ink-500">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <Icon name="user" size={15} className="text-brand-600" /> {job.contact?.name}
+      <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="user" size={15} className="text-brand-text" aria-hidden="true" />
+            {job.contact?.name}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="phone" size={14} aria-hidden="true" />
+            {job.contact?.phone}
+          </span>
+          {job.price && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
+              <Icon name="dollar" size={14} className="text-brand-text" aria-hidden="true" />
+              {bdt(job.price)}
             </span>
-            <span className="flex items-center gap-1">
-              <Icon name="phone" size={15} /> {job.contact?.phone}
-            </span>
-          </div>
+          )}
         </div>
 
-        {canAccept ? (
-          <div className="flex gap-2">
-            <Button size="sm" variant="danger" onClick={() => onReject(job)} disabled={busy} icon="ban">
-              Reject
+        <div className="flex shrink-0 gap-2">
+          {canAccept ? (
+            <>
+              <Button size="sm" variant="secondary" onClick={() => onReject(job)} disabled={busy}>
+                <Icon name="x" size={15} aria-hidden="true" />
+                Reject
+              </Button>
+              <Button size="sm" onClick={() => onAccept(job)} disabled={busy} icon="check">
+                Accept
+              </Button>
+            </>
+          ) : active ? (
+            <Button size="sm" onClick={() => onAdvance(job)} disabled={busy}>
+              {nextLabel(job.status)}
+              <Icon name="arrowright" size={15} aria-hidden="true" />
             </Button>
-            <Button size="sm" onClick={() => onAccept(job)} disabled={busy} icon="check">
-              Accept
-            </Button>
-          </div>
-        ) : active ? (
-          <Button size="sm" onClick={() => onAdvance(job)} disabled={busy} icon="arrowright">
-            {nextLabel(job.status)}
-          </Button>
-        ) : (
-          <span className="text-xs text-ink-300">{job.status === 'Completed' ? 'Completed' : ''}</span>
-        )}
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-faint">
+              <Icon name="checkcircle" size={14} aria-hidden="true" />
+              Completed
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
 
