@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900 antialiased;
+}
+
+.bg-page {
+  background:
+    radial-gradient(800px 400px at 10% -10%, rgba(37, 163, 119, 0.1), transparent),
+    radial-gradient(700px 300px at 95% 0%, rgba(37, 163, 119, 0.08), transparent),
+    #f8fafc;
+}
+
+.pulse-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+.skeleton {
+  @apply animate-pulse rounded-lg bg-ink-200;
+}
